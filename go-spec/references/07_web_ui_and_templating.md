@@ -1,7 +1,5 @@
 # 07. Web UI, Templates & Security Specification
 
-This specification guides LLMs in developing full-stack web pages, dashboards, and admin panels within Go applications. **Core Tenet: Prioritize modern native Web standards (Vanilla JS/CSS/HTML5), Go templates (SSR) with progressive API enhancement, alignment with shadcn minimal aesthetics, single-binary distribution via `//go:embed` with zero external dependencies, and defense-in-depth web security.**
-
 ---
 
 ## 1. Core Architecture Principles

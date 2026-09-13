@@ -1,12 +1,10 @@
 # 04. Testing & Quality Gates Specification
 
-High-quality automated testing is the cornerstone of Go software reliability. This specification establishes standards for unit testing, table-driven test patterns, mocking strategies, fuzzing, and quality verification pipelines.
-
 ---
 
 ## 1. Table-Driven Tests Standard
 
-In Go, all functions containing branching or business logic must utilize **Table-Driven Tests**.
+All functions containing branching or business logic must use **Table-Driven Tests**.
 
 ### Standard Test Template
 ```go

@@ -1,126 +1,109 @@
 ---
 name: go-spec
 description: >-
-  Go engineering and architectural specification guide for LLMs. Covers project structure from small CLIs to large microservices/DDD, greenfield & brownfield workflows, Go 1.23+ standards, log/slog structured logging, observability, table-driven tests, error wrapping & concurrency safety, modern vanilla Web UI (Go templates/shadcn pure CSS/single binary embed/auth security), and strict GoDoc comment standards.
+  Use when designing, scaffolding, developing, refactoring, testing, or reviewing Go applications (Go 1.23+).
+  Enforces production-grade Go engineering standards to guarantee clean architecture (CLI to DDD), explicit error wrapping,
+  leak-free concurrency, structured slog logging, table-driven testing, and secure single-binary web UI delivery.
 ---
 
-# Go Engineering and Code Specification Skill (Go LLM Specification)
-
-This specification is designed specifically for Large Language Models (LLMs) to guide Go code generation, refactoring, code review, full-stack Web page development, and architectural design. It strictly adheres to official Go best practices (Effective Go, Go Code Review Comments, Uber Go Style Guide) and modern Go (Go 1.23+) standards.
+# Go Engineering Specification
 
 ---
 
 ## 1. Non-Negotiable Golden Rules
 
-In any Go development task, the following golden rules must be followed unconditionally:
-
 1. **Explicit Error Handling & Wrapping**:
-   - Never ignore `error` values (except in rare cases explicitly permitted by standard library documentation; all others must be checked explicitly).
-   - Returning errors up the call stack must use `fmt.Errorf("...: %w", err)` to preserve the root cause; checking error types must use `errors.Is` and `errors.As`. Never perform string matching on error text.
-   - **Handle errors only once**: Either handle and log the error locally, or wrap and return it up the stack. Never "log and return" at the same time.
+   - Never ignore `error` values.
+   - Wrap errors with `fmt.Errorf("...: %w", err)`. Inspect error identity with `errors.Is` and extract types with `errors.As`. Never match on error text.
+   - **Handle errors only once**: Either handle and log locally, or wrap and return up the stack. Never log and return simultaneously.
 2. **Context Propagation**:
-   - Any function involving I/O, RPC, database queries, network calls, long-running computations, or cancellable operations must accept `ctx context.Context` as its first parameter.
-   - Never store a `context.Context` inside a struct field (except for rare standard library adapters like `http.Request`).
+   - Any function involving I/O, database queries, RPC, network calls, or cancellations must accept `ctx context.Context` as its first parameter.
+   - Never store a `context.Context` inside a struct field.
 3. **No Leaking Goroutines (Lifecycle Closure)**:
-   - Never launch an unmanaged "orphan" goroutine without a clear termination mechanism. Any background goroutine must be managed by listening to `context.Done()`, or tracked using `sync.WaitGroup` / `golang.org/x/sync/errgroup`.
+   - Never launch unmanaged goroutines. Every background goroutine must be bound to `context.Done()`, `sync.WaitGroup`, or `golang.org/x/sync/errgroup`.
 4. **Accept Interfaces, Return Structs**:
-   - Interfaces should be defined by the **consumer** on an as-needed basis and kept minimal (1–2 methods are best). Avoid pre-defining monolithic interfaces in producer/implementation packages.
+   - Define interfaces on the **consumer** side, keeping them minimal (1–2 methods).
+   - Accept interfaces in parameters; return concrete structs. Avoid defining monolithic interfaces in producer packages.
 5. **Consistency First in Brownfield Projects**:
-   - When modifying existing codebases, **always detect and respect existing project conventions, layering, logging libraries, error handling patterns, and naming conventions**. Never introduce conflicting secondary standards into an established project.
+   - When modifying existing codebases, detect and match existing conventions (logging library, error handling, layering, naming, testing). Never introduce conflicting secondary standards into an established project.
 6. **Modern Vanilla Web & Single Binary Delivery**:
-   - When developing Web UI in Go, favor modern native Web standards (Vanilla JS/CSS/HTML5) and Go `html/template`. Align visual styling with **shadcn/ui** design tokens using pure modern CSS, without introducing heavy Node.js/Webpack build pipelines unless strictly necessary.
-   - Templates and static assets must be bundled into a single binary executable using `//go:embed`.
-   - Any session management or state-modifying requests must enforce `HttpOnly/Secure` cookies, CSRF protection, and security headers.
-7. **Strict GoDoc Comments & Intent Explanation ("Explain Why")**:
-   - All exported packages, types, functions, methods, constants, and variables must have complete-sentence GoDoc comments, and **the first sentence must begin with the identifier's name**.
+   - Build Web UIs using native standards (Vanilla JS/CSS/HTML5) and Go `html/template` styled with pure CSS tokens (shadcn-compatible), without Node.js/Webpack build pipelines.
+   - Bundle templates and static assets into the binary using `//go:embed`.
+   - Enforce CSRF protection on mutating requests, secure session cookies (`HttpOnly`, `Secure`, `SameSite=Lax`), and security headers.
+7. **Strict GoDoc Comments**:
+   - All exported packages, types, functions, methods, constants, and variables must have complete-sentence GoDoc comments starting with the identifier's name.
    - Critical and core functions must provide usage examples in their doc comments.
-   - Comments inside code blocks must focus on **explaining "why" (design intent, business context, concurrency invariants, or trade-offs)**, rather than redundantly stating "what" the code does.
+   - Code comments must document intent, concurrency invariants, or trade-offs—never redundantly restate syntax.
 
 ---
 
-## 2. Decision Routing Tree
+## 2. Scale & Architecture Decision Matrix
 
-Use this decision tree to quickly identify and apply the relevant specification module:
+| Scale | Criteria | Target Architecture | Primary Layout | Reference |
+| :--- | :--- | :--- | :--- | :--- |
+| **Small** | < 1,000 LoC / Single focus | Minimal Root Layout | Root `main.go` + private `internal/` packages | [01_scale_and_structures.md](./references/01_scale_and_structures.md#2-small-project-specification-root-main--internal-layout) |
+| **Medium** | 1,000–15,000 LoC / Standalone API | Standard Go Layout | `cmd/<app>/main.go`, `internal/` (app/service/repo), `pkg/` | [01_scale_and_structures.md](./references/01_scale_and_structures.md#3-medium-project-specification-standard-go-project-layout) |
+| **Large** | > 15,000 LoC / Multi-domain DDD | Clean / Hexagonal | `internal/domain`, `internal/usecase`, `internal/adapter` | [01_scale_and_structures.md](./references/01_scale_and_structures.md#4-large-project-specification-clean--hexagonal--ddd-architecture) |
 
-```mermaid
-graph TD
-    Start[Receive Go Task] --> Mode{Task Type}
-
-    Mode -->|New Project Greenfield| GFlow[Enter Greenfield Workflow: Baseline Go 1.23+]
-    Mode -->|Modify/Refactor Brownfield| BFlow[Enter Brownfield Workflow]
-    Mode -->|Web UI / Fullstack Dev| WFlow[Enter Web UI & Embed Workflow]
-
-    GFlow --> Scale{Assess Project Scale}
-    Scale -->|Small: CLI/Script/Single Module| S1[Root main.go + internal/ Layout]
-    Scale -->|Medium: Standalone Service/CRUD| S2[Standard Layout cmd/internal/pkg]
-    Scale -->|Large: Enterprise Microservices/DDD| S3[Clean / Hexagonal Architecture]
-
-    BFlow --> Inspect[Inspect Existing Conventions: Log/Layers/Errors/Tests]
-    Inspect --> Minimal[Minimal Blast Radius + Backward Compatibility]
-
-    WFlow --> WebArch[Go html/template SSR + API + //go:embed]
-    WebArch --> WebCSS[shadcn Pure CSS Tokens + Vanilla JS]
-    WebArch --> WebSec[Session Cookie + CSRF + RBAC]
-
-    S1 & S2 & S3 & Minimal & WebSec --> Core[Apply Core Engineering Standards]
-    Core --> LogObs[Logging & Observability: slog / OTel]
-    Core --> ErrConc[Error Wrapping & Concurrency Safety]
-    Core --> TestGate[Table-Driven Tests & Quality Gate]
-    Core --> DocComments[GoDoc Documentation & Intent Comments]
-```
+For multi-service monorepos, configure Go Workspaces via `go.work`.
 
 ---
 
 ## 3. References Index
 
-Refer to the detailed reference documents for in-depth guidelines:
-
-| Module | Core Scope | Reference Path |
+| Topic | Reference Document | Description & Key Patterns |
 | :--- | :--- | :--- |
-| **01. Scale & Project Layouts** | Small (Root main + internal/) / Medium (Standard Layout) / Large (Clean/DDD) architecture paradigms | [01_scale_and_structures.md](./references/01_scale_and_structures.md) |
-| **02. Greenfield & Brownfield SOP** | Baseline Go 1.23+; greenfield scaffolding pipeline; brownfield codebase inspection, backward compatibility, option pattern, regression prevention | [02_greenfield_and_brownfield.md](./references/02_greenfield_and_brownfield.md) |
-| **03. Logging & Observability** | `log/slog` structured logging, TraceID propagation, RED metrics, tracing boundaries (optional for small/medium), health probes | [03_logging_and_observability.md](./references/03_logging_and_observability.md) |
-| **04. Testing & Quality Gates** | Table-driven tests, `testify` assertions, interface mocking philosophy, `-race` detector, fuzzing | [04_testing_and_quality.md](./references/04_testing_and_quality.md) |
-| **05. Error Handling & Concurrency** | `%w` wrapping, `errors.Is/As`, custom app errors, `errgroup` concurrency orchestration, channel ownership | [05_errors_and_concurrency.md](./references/05_errors_and_concurrency.md) |
-| **06. Idiomatic Go & Pitfalls** | Zero-value usefulness, functional options, memory/handle leak prevention, goroutine leak audits, acronym casing | [06_idiomatic_go_best_practices.md](./references/06_idiomatic_go_best_practices.md) |
-| **07. Web UI & Single Binary Embed** | Modern Vanilla JS/CSS/HTML5, Go template (SSR) + API hybrid architecture, shadcn styling, `//go:embed` single binary, auth & CSRF | [07_web_ui_and_templating.md](./references/07_web_ui_and_templating.md) |
-| **08. Code Comments & Documentation** | Official GoDoc standards, exported identifier comments (starting with name), critical function examples, explaining "why" vs "what" | [08_documentation_and_comments.md](./references/08_documentation_and_comments.md) |
-
-### 3.1 Official Baseline & Fallbacks
-
-For any edge cases, syntax debates, or architectural details not explicitly covered by this specification, **always fall back to official Go specifications and recognized community best practices**:
-
-1. **[Effective Go](https://go.dev/doc/effective_go)**: The canonical guide to naming, control structures, initialization, interface design, and concurrency models.
-2. **[Go Code Review Comments](https://go.dev/wiki/CodeReviewComments)**: Common review feedback collected by the Go core team (casing of acronyms, context passing, error strings, receiver types).
-3. **[Go Doc Comments](https://go.dev/doc/comment)**: Official syntax and formatting standard for Go doc comments.
-4. **[Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md)**: Battle-tested engineering style guide and pitfall mitigation.
-5. **Go Standard Library Idioms**: When in doubt about abstraction design, consult the Go standard library packages (e.g., `net/http`, `io`, `os`, `sync`).
+| **01. Scale & Project Layouts** | [01_scale_and_structures.md](./references/01_scale_and_structures.md) | Small CLI, Standard Service, Clean Architecture/DDD directory trees, `go.work` |
+| **02. Greenfield & Brownfield SOP** | [02_greenfield_and_brownfield.md](./references/02_greenfield_and_brownfield.md) | Bottom-up scaffolding pipeline, graceful shutdown skeleton, backward compatibility options |
+| **03. Logging & Observability** | [03_logging_and_observability.md](./references/03_logging_and_observability.md) | `log/slog` TraceID handler, RED metrics middleware, OpenTelemetry spans, health probes |
+| **04. Testing & Quality Gates** | [04_testing_and_quality.md](./references/04_testing_and_quality.md) | Table-driven testing skeleton, `require` vs `assert`, interface mocking, fuzz testing |
+| **05. Error Handling & Concurrency** | [05_errors_and_concurrency.md](./references/05_errors_and_concurrency.md) | `%w` wrapping, `errors.Is/As`, `AppError`, `errgroup` parallel orchestration, panic recovery |
+| **06. Idiomatic Go & Pitfalls** | [06_idiomatic_go_best_practices.md](./references/06_idiomatic_go_best_practices.md#1-interface-design-standards) | Consumer interfaces, resource leak fixes (SQL rows, HTTP body, loop defer), manual DI |
+| **07. Web UI & Security** | [07_web_ui_and_templating.md](./references/07_web_ui_and_templating.md) | `//go:embed` asset manager, `html/template` layouts, pure CSS tokens, CSRF & sessions |
+| **08. Code Comments & Documentation** | [08_documentation_and_comments.md](./references/08_documentation_and_comments.md) | Exported identifier comments, code block intent documentation, `Deprecated:`, `TODO` |
 
 ---
 
 ## 4. Templates & Configurations
 
-- **Linter Config**: [golangci.yml](./templates/golangci.yml) (Production configuration with `gofumpt`, `govet`, `revive`, `staticcheck`, `errcheck`, etc.)
+- **Linter Config**: [golangci.yml](./templates/golangci.yml) (Production configuration with `gofumpt`, `govet`, `revive`, `staticcheck`, `errcheck`)
 - **Build Makefile**: [Makefile](./templates/Makefile) (Standard targets for `tidy`, `fmt`, `vet`, `lint`, `test`, `race`, `cover`, `build`)
 - **Table Test Template**: [standard_table_test.go](./templates/standard_table_test.go) (Parallel table-driven test skeleton with mock injection and assertions)
 - **Web UI Templates**:
   - [shadcn_tokens.css](./templates/web/shadcn_tokens.css) (Zero-dependency pure modern CSS design system matching shadcn/ui)
   - [base_layout.html](./templates/web/base_layout.html) (Responsive HTML5 layout with Go `html/template`, dark mode flash-prevention, and unified Fetch client)
-  - [embed_server.go](./templates/web/embed_server.go) (Production-ready single-binary Web server skeleton with `embed.FS`, CSRF, sessions, and security headers)
+  - [embed_server.go](./templates/web/embed_server.go) (Single-binary Web server skeleton with `embed.FS`, CSRF, sessions, and security headers)
 
 ---
 
-## 5. Pre-Commit / Pre-Delivery Checklist
+## 5. Quality Gates & Verification Commands
 
-Before delivering any Go code, perform this self-check:
-- [ ] Development environment and `go.mod` baseline target Go 1.23+.
+```bash
+# 1. Tidy and verify module dependencies
+go mod tidy
+go mod verify
+
+# 2. Run static analysis linters
+golangci-lint run
+
+# 3. Run all tests with data race detection
+go test -race -timeout 60s ./...
+
+# 4. Generate test coverage report (optional)
+go test -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
+```
+
+---
+
+## 6. Pre-Commit / Pre-Delivery Checklist
+
+- [ ] Baseline targets Go 1.23+.
 - [ ] `go vet ./...` and `golangci-lint run` pass with zero warnings.
-- [ ] `go test -race ./...` passes completely with no data races or goroutine leaks.
-- [ ] All errors from invoked functions are inspected and appropriately handled or wrapped.
-- [ ] All exported structs, interfaces, functions, methods, and constants have complete GoDoc comments (first sentence begins with the identifier name).
-- [ ] Critical business functions and core utilities include clear usage code examples in doc comments.
-- [ ] Non-obvious code blocks (locks, buffered channels, defensive branches, workarounds) have comments explaining "why".
-- [ ] Context (`ctx context.Context`) is propagated through all external I/O and long-running calls.
-- [ ] (If Web UI is involved) Template variables are safely auto-escaped by `html/template` with no XSS vulnerabilities.
-- [ ] (If Web UI is involved) Static assets and templates are embedded using `//go:embed` with appropriate caching headers.
-- [ ] (If Web UI is involved) State-mutating requests validate CSRF tokens, and session cookies have `HttpOnly` and `SameSite=Lax`.
+- [ ] `go test -race ./...` passes with no data races or goroutine leaks.
+- [ ] All errors are wrapped with `%w` or handled at boundaries (no "log and return").
+- [ ] `ctx context.Context` is the first parameter for all I/O, database, and network operations.
+- [ ] All goroutines are bounded by `ctx.Done()`, `sync.WaitGroup`, or `errgroup.Group`.
+- [ ] All exported types, functions, methods, and constants have GoDoc comments starting with their name.
+- [ ] Non-obvious code blocks (locks, buffered channels, defensive workarounds) document design intent.
+- [ ] (If Web UI) Assets and templates are bundled via `//go:embed`, and mutating endpoints enforce CSRF tokens.

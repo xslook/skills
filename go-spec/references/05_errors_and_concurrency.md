@@ -1,15 +1,13 @@
 # 05. Error Handling & Concurrency Safety Specification
 
-Go exposes error handling and concurrency explicitly to developers. When generating and refactoring code, LLMs must strictly adhere to modern error wrapping chains and bounded goroutine lifecycles.
-
 ---
 
 ## 1. Modern Error Handling Specification
 
-### 1.1 Error Wrapping & Preserving Root Cause (`%w`)
-- When returning errors up intermediate layers, **always wrap with `%w`** to preserve the root cause call chain.
+### 1.1 Error Wrapping (`%w`)
+- When returning errors up intermediate layers, **always wrap with `%w`** to preserve root causes.
 - Format standard: `fmt.Errorf("<action> <context_identifier>: %w", ..., err)`.
-- Never format errors with `%v` or `%s` (this erases concrete type information, breaking `errors.Is` and `errors.As`).
+- Never format errors with `%v` or `%s` (breaks `errors.Is` and `errors.As`).
 
 ```go
 // ✅ Good: States operational intent, subject identifier, and wraps the error

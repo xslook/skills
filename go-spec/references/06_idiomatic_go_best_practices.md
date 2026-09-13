@@ -1,10 +1,8 @@
 # 06. Idiomatic Go & Pitfall Prevention Specification
 
-This specification summarizes design conventions aligned with Go's design philosophy (Idiomatic Go) alongside critical anti-patterns and performance/memory pitfalls that LLMs must avoid.
-
 ---
 
-## 1. Interface Design Philosophy
+## 1. Interface Design Standards
 
 ### 1.1 "Accept Interfaces, Return Structs"
 - **Function Parameters**: Accept the minimal interface required to perform the task (maximizing decoupling and testability).
@@ -140,8 +138,7 @@ func GetHeader(hugeData []byte) []byte {
 ---
 
 ## 4. Dependency Injection: Manual Constructor Wiring
-
-In Go, favor **explicit constructor injection (Manual DI)**. This keeps the dependency graph transparent, easy to trace, and simple to mock in unit tests:
+Use **explicit constructor injection (Manual DI)**:
 
 ```go
 package app

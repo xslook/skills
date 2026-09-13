@@ -1,7 +1,5 @@
 # 03. Logging & Observability Specification
 
-This specification defines observability standards for production Go systems. By default, it leverages the Go 1.21+ standard library `log/slog` and OpenTelemetry standards.
-
 ---
 
 ## 1. Structured Logging Specification (`log/slog`)

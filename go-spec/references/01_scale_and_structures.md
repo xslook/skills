@@ -1,7 +1,5 @@
 # 01. Go Project Scale and Directory Structure Specification
 
-This specification guides LLMs in selecting appropriate, idiomatic Go project layouts based on business complexity. **Never over-engineer simple projects with excessive layering, and never build large, complex enterprise systems with unconstrained flat layouts.**
-
 ---
 
 ## 1. Scale Decision Matrix

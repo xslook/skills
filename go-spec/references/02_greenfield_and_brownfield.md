@@ -1,18 +1,16 @@
 # 02. Greenfield & Brownfield Standard Operating Procedures (SOP)
 
-Whether starting a brand-new repository from scratch or modifying an existing codebase with tens of thousands of lines of code, LLMs must strictly adhere to this SOP to guarantee consistency, backward compatibility, and system stability.
-
 ---
 
 ## 1. Greenfield Scaffolding SOP
 
-When creating a new Go project, construct it in stages following this sequence:
+Construct new Go projects in stages following this sequence:
 
 ### Stage 1: Environment & Dependency Initialization
 1. **Initialize Module & Set Version Baseline**:
    ```bash
    go mod init <module-path>
-   # Specify modern Go baseline (Go 1.23+ required to leverage iter.Seq, enhanced slices/maps/unique, and safer variable scoping)
+   # Target Go 1.23+ baseline
    ```
 2. **Setup Core Toolchain**:
    - Add `.golangci.yml` (Static analysis baseline, see [golangci.yml](../templates/golangci.yml)).
@@ -111,7 +109,7 @@ func buildRouter() http.Handler {
 
 ## 2. Brownfield Modification SOP
 
-When modifying an existing project, the LLM's primary directives are: **Consistency First, Minimal Blast Radius.**
+Core directives: **Consistency First, Minimal Blast Radius.**
 
 ### Step 1: Codebase Inspection (Inspect Before Writing Code)
 Before writing any code, scan the codebase and identify conventions:
