@@ -1,0 +1,117 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ .CSRFToken }}">
+    <title>{{ block "title" . }}Dashboard{{ end }} - Go Service</title>
+    
+    <!-- Embedded shadcn modern pure CSS -->
+    <link rel="stylesheet" href="/static/css/shadcn.css">
+
+    <!-- Theme initialization script (prevents flash of unstyled content) -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    {{ block "head" . }}{{ end }}
+</head>
+<body class="min-h-screen flex flex-col bg-background text-foreground antialiased">
+    
+    <!-- Top Navigation Bar -->
+    <header class="border-b bg-card/80 backdrop-blur sticky top-0 z-40">
+        <div class="container flex items-center justify-between h-16">
+            <div class="flex items-center gap-6">
+                <a href="/" class="font-bold text-lg tracking-tight">🚀 Go App</a>
+                <nav class="flex items-center gap-4 text-sm font-medium text-muted">
+                    <a href="/dashboard" class="hover:text-foreground transition-colors">Dashboard</a>
+                    <a href="/users" class="hover:text-foreground transition-colors">Users</a>
+                    <a href="/settings" class="hover:text-foreground transition-colors">Settings</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <!-- Dark mode toggle button -->
+                <button type="button" class="btn btn-ghost btn-sm" onclick="toggleTheme()" title="Toggle theme">
+                    🌓
+                </button>
+
+                {{ if .User }}
+                    <span class="text-sm font-medium">{{ .User.Email }}</span>
+                    <form action="/logout" method="POST" class="inline">
+                        <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
+                        <button type="submit" class="btn btn-outline btn-sm">Log out</button>
+                    </form>
+                {{ else }}
+                    <a href="/login" class="btn btn-primary btn-sm">Log in</a>
+                {{ end }}
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash / Toast Notification Banner -->
+    {{ if .FlashMessage }}
+    <div class="container mt-4">
+        <div class="card p-3 bg-secondary text-secondary-foreground text-sm flex justify-between items-center">
+            <span>{{ .FlashMessage }}</span>
+            <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    </div>
+    {{ end }}
+
+    <!-- Main Content Area -->
+    <main class="container flex-1 py-6">
+        {{ block "content" . }}
+            <p>Default content</p>
+        {{ end }}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t py-6 text-center text-sm text-muted">
+        <div class="container">
+            <p>&copy; 2026 Go Application. Single Binary Powered by Go & Vanilla Web.</p>
+        </div>
+    </footer>
+
+    <!-- Global Client Utilities -->
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+
+        // Unified Fetch API Client
+        class API {
+            static getCSRF() {
+                return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            }
+
+            static async request(url, options = {}) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': this.getCSRF(),
+                    ...options.headers,
+                };
+                const res = await fetch(url, { ...options, headers });
+                if (res.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.message || 'Request failed: ' + res.status);
+                return data;
+            }
+
+            static get(url) { return this.request(url, { method: 'GET' }); }
+            static post(url, body) { return this.request(url, { method: 'POST', body: JSON.stringify(body) }); }
+            static delete(url) { return this.request(url, { method: 'DELETE' }); }
+        }
+    </script>
+    {{ block "scripts" . }}{{ end }}
+</body>
+</html>
+{{ end }}

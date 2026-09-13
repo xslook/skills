@@ -1,0 +1,69 @@
+# Production-grade golangci-lint strict configuration template
+run:
+  timeout: 5m
+  tests: true
+  allow-parallel-runners: true
+
+output:
+  sort-results: true
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment # Enable only if strict memory alignment is required
+  gofumpt:
+    extra-rules: true
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - checkPrivateReceivers
+      - name: package-comments
+      - name: error-naming
+      - name: error-strings
+      - name: error-return
+      - name: var-naming
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - whyNoLint
+  nestif:
+    min-complexity: 5
+  cyclop:
+    max-complexity: 15
+
+linters:
+  disable-all: true
+  enable:
+    # Core correctness & bug detection
+    - errcheck
+    - govet
+    - staticcheck
+    - typecheck
+    - ineffassign
+    - unused
+
+    # Modern formatting & code style
+    - gofumpt
+    - revive
+    - gocritic
+    - misspell
+    - unconvert
+
+    # Complexity & security
+    - nestif
+    - gosec
+    - nilerr
+    - exportloopref
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
