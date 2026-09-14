@@ -175,6 +175,8 @@ A framework-agnostic reference defining design tokens, spatial metrics, and elev
 
 - [Design Values](./specifications/values.md)
 - [Design Tokens](./theme/design-tokens.md)
+- [Dashboard Workflows](./WORKFLOWS.md)
+- [Best Practices](./BEST_PRACTICES.md)
 - [Grid System](./layout/grid-system.md)
 - [Component Overview](./components/overview.md)
 - [Reference Theme (shadcn/ui)](./theme/shadcn/theme.css)

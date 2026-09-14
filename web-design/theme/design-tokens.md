@@ -39,17 +39,22 @@ The design system structures styling variables across a 4-tier cascade, decoupli
 
 ## 2. Core Token Catalog
 
-### Color Tokens
-- `color-bg-base`: Root background (`#ffffff` light, `#000000` dark).
-- `color-bg-layout`: Page background behind containers (`#f5f5f5`).
-- `color-bg-container`: Cards, tables, and form container surfaces (`#ffffff`).
-- `color-bg-elevated`: Floating surfaces like dropdowns and dialogs (`#ffffff`).
-- `color-text`: Primary body and heading text (`rgba(0, 0, 0, 0.88)`).
-- `color-text-secondary`: Subtitles and secondary text (`rgba(0, 0, 0, 0.65)`).
-- `color-text-tertiary`: Captions, labels, and icons (`rgba(0, 0, 0, 0.45)`).
-- `color-text-disabled`: Disabled text and input placeholders (`rgba(0, 0, 0, 0.25)`).
-- `color-border`: Default component boundaries (`#d9d9d9`).
-- `color-border-secondary`: Secondary dividers and subtle table lines (`#f0f0f0`).
+### Color & Surface Tokens
+- `surface-0`: Base page canvas (`#ffffff` light, `#09090b` dark).
+- `surface-1`: Container, card, and table background (`#ffffff` light, `#121215` dark).
+- `surface-2`: Subtle fill, hover highlight, and table header background (`#f4f4f5` light, `#1c1c20` dark).
+- `surface-3`: Floating popover, dropdown, and date picker surface (`#ffffff` light, `#242429` dark).
+- `surface-4`: High-elevation modal, dialog, and drawer surface (`#ffffff` light, `#2a2a30` dark).
+
+### Text Hierarchy Tokens
+- `text-0`: High-contrast primary headings and body text (`#09090b` light, `#fafafa` dark).
+- `text-1`: Secondary text, metadata subtitles, and table headers (`#71717a` light, `#a1a1aa` dark).
+- `text-2`: Tertiary captions, helper hints, and input placeholders (`#a1a1aa` light, `#71717a` dark).
+- `text-3`: Disabled text and inactive indicators (`#d4d4d8` light, `#52525b` dark).
+
+### Semantic Boundary Tokens
+- `border`: Default component boundaries (`#e4e4e7` light, `#27272a` dark).
+- `border-secondary`: Secondary dividers and subtle table lines (`#f4f4f5` light, `#18181b` dark).
 
 ### Spacing & Size Tokens
 - `size-unit`: Base unit (`4px`).

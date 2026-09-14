@@ -14,6 +14,8 @@ A framework-agnostic web design system tailored for user and admin dashboards, d
 web-design/
 ├── SKILL.md                          # Main entry point and navigation router
 ├── design.md                         # Machine-readable Design Token dictionary
+├── WORKFLOWS.md                      # 6 End-to-end dashboard implementation recipes
+├── BEST_PRACTICES.md                 # Customization hierarchy, density, and performance
 │
 ├── specifications/                   # Core Design Specifications
 │   ├── values.md                     # 4 Design values: Natural, Certain, Meaningful, Growing
@@ -95,6 +97,8 @@ Every component document in `components/` follows an 8-part specification:
 
 ## LLM Retrieval Guidelines
 
+- **Building Dashboard Workflows**: Read [WORKFLOWS.md](./WORKFLOWS.md) for data tables, multi-step forms, KPI dashboards, and drawers.
+- **Architectural Best Practices**: Read [BEST_PRACTICES.md](./BEST_PRACTICES.md) for the customization ladder, dark mode math, density, and accessibility.
 - **Configuring Design Tokens or Colors**: Read [theme/design-tokens.md](./theme/design-tokens.md) and [theme/colors.md](./theme/colors.md).
 - **shadcn Theme Implementation**: Use [theme/shadcn/theme.css](./theme/shadcn/theme.css), [theme/shadcn/components.css](./theme/shadcn/components.css), and [theme/shadcn/theme.js](./theme/shadcn/theme.js).
 - **Building Page Layouts**: Read [layout/grid-system.md](./layout/grid-system.md) and [layout/page-templates.md](./layout/page-templates.md).
@@ -105,4 +109,4 @@ Every component document in `components/` follows an 8-part specification:
 
 ## References & Acknowledgments
 
-This design system synthesizes enterprise interaction contracts, state determination, and 24-column layout mathematics from the [Ant Design](https://ant.design/) specification, paired with a modern CSS and JavaScript reference implementation styled after shadcn/ui.
+This design system synthesizes enterprise interaction contracts and 24-column layout mathematics from [Ant Design](https://ant.design/), modular workflow and token stratification patterns from [Semi Design](https://semi.design/), paired with a modern CSS and JavaScript reference implementation styled after shadcn/ui.

@@ -17,6 +17,19 @@
   --popover: #ffffff;
   --popover-foreground: #09090b;
 
+  /* Numerical Surface Hierarchy (Stratified Elevation) */
+  --surface-0: #ffffff; /* Base page canvas */
+  --surface-1: #ffffff; /* Card / container surface */
+  --surface-2: #f4f4f5; /* Hover / subtle / table header surface */
+  --surface-3: #ffffff; /* Floating dropdown / popover surface */
+  --surface-4: #ffffff; /* High elevation modal / dialog surface */
+
+  /* Numerical Text Hierarchy */
+  --text-0: #09090b;    /* High-contrast primary text */
+  --text-1: #71717a;    /* Secondary metadata & subtitles */
+  --text-2: #a1a1aa;    /* Tertiary captions & placeholders */
+  --text-3: #d4d4d8;    /* Disabled text */
+
   /* Primary Brand (Sleek Slate / Obsidian) */
   --primary: #18181b;
   --primary-foreground: #fafafa;
@@ -135,6 +148,19 @@
 
   --popover: #09090b;
   --popover-foreground: #fafafa;
+
+  /* Numerical Surface Hierarchy (Inverted Elevation Tones) */
+  --surface-0: #09090b; /* Base canvas */
+  --surface-1: #121215; /* Card / container surface */
+  --surface-2: #1c1c20; /* Hover / subtle / table header surface */
+  --surface-3: #242429; /* Floating dropdown / popover surface */
+  --surface-4: #2a2a30; /* High elevation modal / dialog surface */
+
+  /* Numerical Text Hierarchy */
+  --text-0: #fafafa;    /* High-contrast primary text */
+  --text-1: #a1a1aa;    /* Secondary metadata & descriptions */
+  --text-2: #71717a;    /* Tertiary captions & placeholders */
+  --text-3: #52525b;    /* Disabled text */
 
   --primary: #fafafa;
   --primary-foreground: #18181b;
