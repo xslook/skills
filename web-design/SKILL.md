@@ -1,14 +1,12 @@
 ---
 name: web-design
 description: >-
-  Use when designing or developing modern web user interfaces, structuring responsive layouts,
-  configuring design tokens, or implementing interaction contracts and accessible components. Combines
-  enterprise interaction patterns with a clean shadcn/ui-inspired aesthetic in standard CSS and JavaScript.
+  Use when designing or developing web dashboards, admin consoles, user portals, or data-dense application interfaces. Do not use for customer-facing marketing websites, landing pages, backend logic, or native non-web apps.
 ---
 
 # Web Design System Specification
 
-A modern, framework-agnostic design system covering design tokens, layout grids, interaction contracts, and component specifications with a clean shadcn/ui-inspired reference implementation in CSS and JavaScript.
+A framework-agnostic web design system tailored for user and admin dashboards, data consoles, and management interfaces. Covers design tokens, 24-column layout grids, interaction contracts, and 72 component specifications, combining enterprise interaction patterns with a clean shadcn/ui-inspired aesthetic implemented in standard CSS and JavaScript.
 
 ## System Directory & Router
 
