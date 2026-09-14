@@ -386,7 +386,38 @@ Floating action banner triggered when 1 or more table rows are selected, providi
 
 ---
 
-## 6. Troubleshooting & Diagnostics Flowchart
+## 6. Modern Inset Collapsible Dashboard Layout
+
+### Intent
+High-efficiency workspace architecture featuring a collapsible inset sidebar, sticky utility header, responsive metric KPI cards, data visualization canvas, and a primary data table.
+
+### Architectural Anatomy
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ [Workspace Brand]   │ [Sidebar Trigger] [Page Title]    [Search] [User]│
+├─────────────────────┼──────────────────────────────────────────────────┤
+│ [Primary Actions]   │ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐     │
+│ • Nav Item 1        │ │ Metric │ │ Metric │ │ Metric │ │ Metric │     │
+│ • Nav Item 2        │ └────────┘ └────────┘ └────────┘ └────────┘     │
+│                     │ ┌──────────────────────────────────────────────┐ │
+│ [Group Label]       │ │ Chart Canvas / Analytics Overview            │ │
+│ • Section Item A    │ └──────────────────────────────────────────────┘ │
+│ • Section Item B    │ ┌──────────────────────────────────────────────┐ │
+│                     │ │ Filter Bar: [Search] [Tabs]         [Export] │ │
+│ [System / Settings] │ │ ──────────────────────────────────────────── │ │
+│ [User Profile]      │ │ Data Table: Multi-column Records & Actions   │ │
+│                     │ └──────────────────────────────────────────────┘ │
+└─────────────────────┴──────────────────────────────────────────────────┘
+```
+
+### Implementation Highlights
+- **Inset Canvas**: Uses `.sidebar-wrapper` with `.sidebar` and `.sidebar-inset`, giving the main content area a clean floating border, subtle shadow, and curved corners (`--radius-lg`).
+- **Collapsible Sidebar**: Supports dynamic toggle via `ThemeManager.toggleSidebar()` between full width (`--sidebar-width: 260px`) and icon-only rail (`--sidebar-width-icon: 48px`).
+- **Complete Template**: For full HTML/CSS implementation, see [style-guide.md](file:///Users/xiong/Documents/Gemini/AntDesign/theme/shadcn/style-guide.md#4-complete-dashboard-layout-boilerplate).
+
+---
+
+## 7. Troubleshooting & Diagnostics Flowchart
 
 | Symptom | Root Cause | Solution |
 | :--- | :--- | :--- |

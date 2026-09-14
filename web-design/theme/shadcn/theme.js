@@ -184,6 +184,77 @@
     }
   }
 
+  var SIDEBAR_STORAGE_KEY = 'ui-sidebar-collapsed';
+
+  /**
+   * Toggle sidebar collapse state.
+   * @param {HTMLElement} [sidebarElement]
+   * @returns {boolean} New collapsed state
+   */
+  function toggleSidebar(sidebarElement) {
+    if (typeof document === 'undefined') return false;
+    var sidebar = sidebarElement || document.querySelector('.sidebar');
+    if (!sidebar) return false;
+
+    var isCollapsed = sidebar.classList.contains('collapsed') || sidebar.getAttribute('data-collapsed') === 'true';
+    var nextState = !isCollapsed;
+
+    if (nextState) {
+      sidebar.classList.add('collapsed');
+      sidebar.setAttribute('data-collapsed', 'true');
+    } else {
+      sidebar.classList.remove('collapsed');
+      sidebar.setAttribute('data-collapsed', 'false');
+    }
+
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, nextState ? 'true' : 'false');
+    } catch (e) {}
+
+    return nextState;
+  }
+
+  /**
+   * Set sidebar collapse state explicitly.
+   * @param {boolean} collapsed
+   * @param {HTMLElement} [sidebarElement]
+   */
+  function setSidebarCollapsed(collapsed, sidebarElement) {
+    if (typeof document === 'undefined') return;
+    var sidebar = sidebarElement || document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    if (collapsed) {
+      sidebar.classList.add('collapsed');
+      sidebar.setAttribute('data-collapsed', 'true');
+    } else {
+      sidebar.classList.remove('collapsed');
+      sidebar.setAttribute('data-collapsed', 'false');
+    }
+
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? 'true' : 'false');
+    } catch (e) {}
+  }
+
+  /**
+   * Initialize sidebar collapse state from storage.
+   * @param {HTMLElement} [sidebarElement]
+   */
+  function initSidebar(sidebarElement) {
+    if (typeof document === 'undefined') return;
+    var sidebar = sidebarElement || document.querySelector('.sidebar');
+    if (!sidebar) return;
+
+    try {
+      var saved = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+      if (saved === 'true') {
+        sidebar.classList.add('collapsed');
+        sidebar.setAttribute('data-collapsed', 'true');
+      }
+    } catch (e) {}
+  }
+
   return {
     initTheme: initTheme,
     setTheme: setTheme,
@@ -192,6 +263,9 @@
     toggleTheme: toggleTheme,
     getToken: getToken,
     setToken: setToken,
-    onThemeChange: onThemeChange
+    onThemeChange: onThemeChange,
+    toggleSidebar: toggleSidebar,
+    setSidebarCollapsed: setSidebarCollapsed,
+    initSidebar: initSidebar
   };
 });
