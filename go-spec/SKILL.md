@@ -1,12 +1,11 @@
 ---
 name: go-spec
-description: >-
-  Use when designing, scaffolding, developing, refactoring, testing, or reviewing Go applications (Go 1.23+).
-  Enforces production-grade Go engineering standards to guarantee clean architecture (CLI to DDD), explicit error wrapping,
-  leak-free concurrency, structured slog logging, table-driven testing, and secure single-binary web UI delivery.
+description: Use when designing, scaffolding, developing, refactoring, testing, or reviewing Go applications.
 ---
 
 # Go Engineering Specification
+
+Enforces production-grade Go engineering standards to guarantee clean architecture (CLI to DDD), explicit error wrapping, leak-free concurrency, structured slog logging, table-driven testing, and secure single-binary web UI delivery.
 
 ---
 
