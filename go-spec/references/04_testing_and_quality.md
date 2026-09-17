@@ -70,7 +70,6 @@ func TestUserService_Register(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt // Backward compatibility for loop variable capture (Go 1.22+ handles this automatically)
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

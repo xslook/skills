@@ -114,53 +114,8 @@ func (m *AssetManager) ParseTemplates(funcMap template.FuncMap) (*template.Templ
 
 Align with shadcn visual styling using pure native modern CSS features (CSS Custom Properties, `:has()`, `backdrop-filter`, `accent-color`) without needing Tailwind CLI:
 
-### 3.1 Core Design Variables (`shadcn_tokens.css`)
-```css
-:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 212.7 26.8% 83.9%;
-}
-```
+### 3.1 Core Design Variables
+See [shadcn_tokens.css](../templates/web/shadcn_tokens.css) for the complete HSL color token definitions (light mode `:root` and `.dark` overrides).
 
 ### 3.2 Common shadcn-Style Class Naming
 - **Buttons**: `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-outline`, `.btn-ghost`, `.btn-destructive`, `.btn-sm`, `.btn-lg`
@@ -241,41 +196,7 @@ var TemplateFuncs = template.FuncMap{
 ## 5. Modern Vanilla JavaScript Conventions
 
 ### 5.1 Unified Fetch Client Wrapper (Automatic CSRF & Error Handling)
-```javascript
-// static/js/app.js
-class APIClient {
-    static getCSRFToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-    }
-
-    static async request(url, options = {}) {
-        const defaultHeaders = {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': this.getCSRFToken(),
-        };
-
-        const response = await fetch(url, {
-            ...options,
-            headers: { ...defaultHeaders, ...options.headers },
-        });
-
-        if (response.status === 401) {
-            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-            return;
-        }
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            throw new Error(data.message || `Request failed with status ${response.status}`);
-        }
-        return data;
-    }
-
-    static get(url) { return this.request(url, { method: 'GET' }); }
-    static post(url, body) { return this.request(url, { method: 'POST', body: JSON.stringify(body) }); }
-    static delete(url) { return this.request(url, { method: 'DELETE' }); }
-}
-```
+See the `API` class in [base_layout.html](../templates/web/base_layout.html) for the canonical implementation — handles CSRF token injection, 401 redirect, and JSON error extraction.
 
 ### 5.2 Native `<dialog>` Modal Interaction
 ```html
@@ -429,7 +350,7 @@ func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
 		next.ServeHTTP(w, r)
 	})
 }

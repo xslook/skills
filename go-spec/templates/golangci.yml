@@ -61,7 +61,6 @@ linters:
     - nestif
     - gosec
     - nilerr
-    - exportloopref
 
 issues:
   exclude-use-default: false

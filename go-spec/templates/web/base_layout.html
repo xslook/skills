@@ -1,6 +1,6 @@
 {{ define "base" }}
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +9,64 @@
     
     <!-- Embedded shadcn modern pure CSS -->
     <link rel="stylesheet" href="/static/css/shadcn.css">
+
+    <!-- Page layout styles (supplements shadcn_tokens.css using only defined CSS variables) -->
+    <style>
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            border-bottom: 1px solid hsl(var(--border));
+            background-color: hsl(var(--card) / 0.8);
+            backdrop-filter: blur(8px);
+        }
+        .site-header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 4rem;
+        }
+        .site-logo {
+            font-weight: 700;
+            font-size: 1.125rem;
+            letter-spacing: -0.025em;
+            text-decoration: none;
+            color: hsl(var(--foreground));
+        }
+        .site-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .site-nav a {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: hsl(var(--muted-foreground));
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .site-nav a:hover {
+            color: hsl(var(--foreground));
+        }
+        .site-main {
+            flex: 1;
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+        .site-footer {
+            border-top: 1px solid hsl(var(--border));
+            padding: 1.5rem 0;
+            text-align: center;
+        }
+        .site-flash {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+        .font-medium { font-weight: 500; }
+        .inline-form { display: inline; }
+    </style>
 
     <!-- Theme initialization script (prevents flash of unstyled content) -->
     <script>
@@ -20,21 +78,21 @@
     </script>
     {{ block "head" . }}{{ end }}
 </head>
-<body class="min-h-screen flex flex-col bg-background text-foreground antialiased">
+<body class="min-h-screen flex flex-col">
     
     <!-- Top Navigation Bar -->
-    <header class="border-b bg-card/80 backdrop-blur sticky top-0 z-40">
-        <div class="container flex items-center justify-between h-16">
-            <div class="flex items-center gap-6">
-                <a href="/" class="font-bold text-lg tracking-tight">🚀 Go App</a>
-                <nav class="flex items-center gap-4 text-sm font-medium text-muted">
-                    <a href="/dashboard" class="hover:text-foreground transition-colors">Dashboard</a>
-                    <a href="/users" class="hover:text-foreground transition-colors">Users</a>
-                    <a href="/settings" class="hover:text-foreground transition-colors">Settings</a>
+    <header class="site-header">
+        <div class="container site-header-inner">
+            <div class="flex items-center gap-4">
+                <a href="/" class="site-logo">🚀 Go App</a>
+                <nav class="site-nav">
+                    <a href="/dashboard">Dashboard</a>
+                    <a href="/users">Users</a>
+                    <a href="/settings">Settings</a>
                 </nav>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <!-- Dark mode toggle button -->
                 <button type="button" class="btn btn-ghost btn-sm" onclick="toggleTheme()" title="Toggle theme">
                     🌓
@@ -42,7 +100,7 @@
 
                 {{ if .User }}
                     <span class="text-sm font-medium">{{ .User.Email }}</span>
-                    <form action="/logout" method="POST" class="inline">
+                    <form action="/logout" method="POST" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ $.CSRFToken }}">
                         <button type="submit" class="btn btn-outline btn-sm">Log out</button>
                     </form>
@@ -55,8 +113,8 @@
 
     <!-- Flash / Toast Notification Banner -->
     {{ if .FlashMessage }}
-    <div class="container mt-4">
-        <div class="card p-3 bg-secondary text-secondary-foreground text-sm flex justify-between items-center">
+    <div class="container">
+        <div class="card site-flash text-sm flex justify-between items-center">
             <span>{{ .FlashMessage }}</span>
             <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">✕</button>
         </div>
@@ -64,15 +122,15 @@
     {{ end }}
 
     <!-- Main Content Area -->
-    <main class="container flex-1 py-6">
+    <main class="container site-main">
         {{ block "content" . }}
             <p>Default content</p>
         {{ end }}
     </main>
 
     <!-- Footer -->
-    <footer class="border-t py-6 text-center text-sm text-muted">
-        <div class="container">
+    <footer class="site-footer">
+        <div class="container text-sm text-muted">
             <p>&copy; 2026 Go Application. Single Binary Powered by Go & Vanilla Web.</p>
         </div>
     </footer>
