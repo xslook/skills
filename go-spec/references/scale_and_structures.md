@@ -1,4 +1,4 @@
-# 01. Go Project Scale and Directory Structure Specification
+# Go Project Scale and Directory Structure Specification
 
 ---
 

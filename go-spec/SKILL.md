@@ -40,9 +40,9 @@ Enforces production-grade Go engineering standards to guarantee clean architectu
 
 | Scale | Criteria | Target Architecture | Primary Layout | Reference |
 | :--- | :--- | :--- | :--- | :--- |
-| **Small** | < 1,000 LoC / Single focus | Minimal Root Layout | Root `main.go` + private `internal/` packages | [01_scale_and_structures.md](./references/01_scale_and_structures.md#2-small-project-specification-root-main--internal-layout) |
-| **Medium** | 1,000–15,000 LoC / Standalone API | Standard Go Layout | `cmd/<app>/main.go`, `internal/` (app/service/repo), `pkg/` | [01_scale_and_structures.md](./references/01_scale_and_structures.md#3-medium-project-specification-standard-go-project-layout) |
-| **Large** | > 15,000 LoC / Multi-domain DDD | Clean / Hexagonal | `internal/domain`, `internal/usecase`, `internal/adapter` | [01_scale_and_structures.md](./references/01_scale_and_structures.md#4-large-project-specification-clean--hexagonal--ddd-architecture) |
+| **Small** | < 1,000 LoC / Single focus | Minimal Root Layout | Root `main.go` + private `internal/` packages | [scale_and_structures.md](./references/scale_and_structures.md#2-small-project-specification-root-main--internal-layout) |
+| **Medium** | 1,000–15,000 LoC / Standalone API | Standard Go Layout | `cmd/<app>/main.go`, `internal/` (app/service/repo), `pkg/` | [scale_and_structures.md](./references/scale_and_structures.md#3-medium-project-specification-standard-go-project-layout) |
+| **Large** | > 15,000 LoC / Multi-domain DDD | Clean / Hexagonal | `internal/domain`, `internal/usecase`, `internal/adapter` | [scale_and_structures.md](./references/scale_and_structures.md#4-large-project-specification-clean--hexagonal--ddd-architecture) |
 
 For multi-service monorepos, configure Go Workspaces via `go.work`.
 
@@ -52,14 +52,14 @@ For multi-service monorepos, configure Go Workspaces via `go.work`.
 
 | Topic | Reference Document | Description & Key Patterns |
 | :--- | :--- | :--- |
-| **01. Scale & Project Layouts** | [01_scale_and_structures.md](./references/01_scale_and_structures.md) | Small CLI, Standard Service, Clean Architecture/DDD directory trees, `go.work` |
-| **02. Greenfield & Brownfield SOP** | [02_greenfield_and_brownfield.md](./references/02_greenfield_and_brownfield.md) | Bottom-up scaffolding pipeline, graceful shutdown skeleton, backward compatibility options |
-| **03. Logging & Observability** | [03_logging_and_observability.md](./references/03_logging_and_observability.md) | `log/slog` TraceID handler, RED metrics middleware, OpenTelemetry spans, health probes |
-| **04. Testing & Quality Gates** | [04_testing_and_quality.md](./references/04_testing_and_quality.md) | Table-driven testing skeleton, `require` vs `assert`, interface mocking, fuzz testing |
-| **05. Error Handling & Concurrency** | [05_errors_and_concurrency.md](./references/05_errors_and_concurrency.md) | `%w` wrapping, `errors.Is/As`, `AppError`, `errgroup` parallel orchestration, panic recovery |
-| **06. Idiomatic Go & Pitfalls** | [06_idiomatic_go_best_practices.md](./references/06_idiomatic_go_best_practices.md#1-interface-design-standards) | Consumer interfaces, resource leak fixes (SQL rows, HTTP body, loop defer), manual DI |
-| **07. Web UI & Security** | [07_web_ui_and_templating.md](./references/07_web_ui_and_templating.md) | `//go:embed` asset manager, `html/template` layouts, pure CSS tokens, CSRF & sessions |
-| **08. Code Comments & Documentation** | [08_documentation_and_comments.md](./references/08_documentation_and_comments.md) | Exported identifier comments, code block intent documentation, `Deprecated:`, `TODO` |
+| **Scale & Project Layouts** | [scale_and_structures.md](./references/scale_and_structures.md) | Small CLI, Standard Service, Clean Architecture/DDD directory trees, `go.work` |
+| **Greenfield & Brownfield SOP** | [greenfield_and_brownfield.md](./references/greenfield_and_brownfield.md) | Bottom-up scaffolding pipeline, graceful shutdown skeleton, backward compatibility options |
+| **Logging & Observability** | [logging_and_observability.md](./references/logging_and_observability.md) | `log/slog` TraceID handler, RED metrics middleware, OpenTelemetry spans, health probes |
+| **Testing & Quality Gates** | [testing_and_quality.md](./references/testing_and_quality.md) | Table-driven testing skeleton, `require` vs `assert`, interface mocking, fuzz testing |
+| **Error Handling & Concurrency** | [errors_and_concurrency.md](./references/errors_and_concurrency.md) | `%w` wrapping, `errors.Is/As`, `AppError`, `errgroup` parallel orchestration, panic recovery |
+| **Idiomatic Go & Pitfalls** | [idiomatic_go_best_practices.md](./references/idiomatic_go_best_practices.md#1-interface-design-standards) | Consumer interfaces, resource leak fixes (SQL rows, HTTP body, loop defer), manual DI |
+| **Web UI & Security** | [web_ui_and_templating.md](./references/web_ui_and_templating.md) | `//go:embed` asset manager, `html/template` layouts, pure CSS tokens, CSRF & sessions |
+| **Code Comments & Documentation** | [documentation_and_comments.md](./references/documentation_and_comments.md) | Exported identifier comments, code block intent documentation, `Deprecated:`, `TODO` |
 
 ---
 

@@ -1,4 +1,4 @@
-# 03. Logging & Observability Specification
+# Logging & Observability Specification
 
 ---
 

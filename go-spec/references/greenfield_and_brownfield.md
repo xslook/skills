@@ -1,4 +1,4 @@
-# 02. Greenfield & Brownfield Standard Operating Procedures (SOP)
+# Greenfield & Brownfield Standard Operating Procedures (SOP)
 
 ---
 

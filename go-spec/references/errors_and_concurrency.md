@@ -1,4 +1,4 @@
-# 05. Error Handling & Concurrency Safety Specification
+# Error Handling & Concurrency Safety Specification
 
 ---
 

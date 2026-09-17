@@ -1,4 +1,4 @@
-# 07. Web UI, Templates & Security Specification
+# Web UI, Templates & Security Specification
 
 ---
 

@@ -1,4 +1,4 @@
-# 08. Documentation & Code Comments Specification
+# Documentation & Code Comments Specification
 
 ---
 

@@ -1,4 +1,4 @@
-# 04. Testing & Quality Gates Specification
+# Testing & Quality Gates Specification
 
 ---
 

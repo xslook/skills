@@ -1,4 +1,4 @@
-# 06. Idiomatic Go & Pitfall Prevention Specification
+# Idiomatic Go & Pitfall Prevention Specification
 
 ---
 
