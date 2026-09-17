@@ -41,11 +41,10 @@ type PageData struct {
 
 // 3. Web Server Definition
 type Server struct {
-	tmpl   *template.Template
-	logger *slog.Logger
+	tmpl *template.Template
 }
 
-func NewServer(logger *slog.Logger) (*Server, error) {
+func NewServer() (*Server, error) {
 	// Load and compile embedded HTML templates
 	tmpl, err := template.ParseFS(embeddedAssets, "templates/**/*.html", "templates/*.html")
 	if err != nil {
@@ -53,8 +52,7 @@ func NewServer(logger *slog.Logger) (*Server, error) {
 	}
 
 	return &Server{
-		tmpl:   tmpl,
-		logger: logger,
+		tmpl: tmpl,
 	}, nil
 }
 
@@ -94,7 +92,7 @@ func (s *Server) handleHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.tmpl.ExecuteTemplate(w, "base", data); err != nil {
-		s.logger.ErrorContext(r.Context(), "render template error", "err", err)
+		slog.ErrorContext(r.Context(), "render template error", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
@@ -210,12 +208,11 @@ func (s *Server) getOrCreateCSRFToken(w http.ResponseWriter, r *http.Request) st
 
 // 6. Application Entrypoint & Graceful Shutdown
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
-	server, err := NewServer(logger)
+	server, err := NewServer()
 	if err != nil {
-		logger.Error("failed to create server", "err", err)
+		slog.Error("failed to create server", "err", err)
 		os.Exit(1)
 	}
 
@@ -231,17 +228,17 @@ func main() {
 	defer stop()
 
 	go func() {
-		logger.Info("Web server is running at http://localhost:8080")
+		slog.Info("Web server is running at http://localhost:8080")
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server fatal", "err", err)
+			slog.Error("server fatal", "err", err)
 		}
 	}()
 
 	<-ctx.Done()
-	logger.Info("shutting down web server...")
+	slog.Info("shutting down web server...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = httpServer.Shutdown(shutdownCtx)
-	logger.Info("web server exited cleanly")
+	slog.Info("web server exited cleanly")
 }

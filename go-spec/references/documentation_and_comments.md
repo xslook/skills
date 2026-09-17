@@ -35,8 +35,7 @@ package auth
 // payment state transitions, and inventory deduction.
 // OrderManager is safe for concurrent use by multiple goroutines.
 type OrderManager struct {
-	repo   OrderRepository
-	logger *slog.Logger
+	repo OrderRepository
 }
 
 // PaymentGateway defines the contract for interacting with external payment providers (e.g., Stripe, PayPal).

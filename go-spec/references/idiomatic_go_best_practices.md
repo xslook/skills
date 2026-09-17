@@ -148,14 +148,14 @@ type App struct {
     orderHandler *handler.OrderHandler
 }
 
-func NewApp(db *sql.DB, rdb *redis.Client, logger *slog.Logger) *App {
+func NewApp(db *sql.DB, rdb *redis.Client) *App {
     // 1. Initialize repositories
     userRepo := repository.NewUserPostgres(db)
     orderRepo := repository.NewOrderPostgres(db)
 
-    // 2. Initialize application services
-    userService := service.NewUserService(userRepo, logger)
-    orderService := service.NewOrderService(orderRepo, userRepo, logger)
+    // 2. Initialize application services (use global slog directly inside services)
+    userService := service.NewUserService(userRepo)
+    orderService := service.NewOrderService(orderRepo, userRepo)
 
     // 3. Initialize transport handlers
     userHandler := handler.NewUserHandler(userService)
@@ -167,3 +167,69 @@ func NewApp(db *sql.DB, rdb *redis.Client, logger *slog.Logger) *App {
     }
 }
 ```
+
+---
+
+## 5. Logging Standards & Pitfalls: Global `slog` vs Passing Logger Pointers
+
+### 5.1 Anti-Pattern: Passing Logger Pointers as Function Arguments
+**DO NOT pass a logger pointer (`*slog.Logger`) as a function argument or store it in struct fields—it is a bad practice!**
+
+```go
+// ❌ Bad: Passing logger pointer as function/method parameter or struct field
+type UserService struct {
+    repo   UserRepository
+    logger *slog.Logger // Struct bloat
+}
+
+func NewUserService(repo UserRepository, logger *slog.Logger) *UserService {
+    return &UserService{repo: repo, logger: logger}
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, logger *slog.Logger, id string) error {
+    logger.InfoContext(ctx, "updating user", "id", id) // Clutters function signature
+    return nil
+}
+```
+
+#### Why Passing Logger Pointers is a Bad Practice
+1. **Signature Pollution**: Method and function signatures become cluttered with non-domain concerns (`func DoWork(ctx context.Context, logger *slog.Logger, ...)`), reducing readability.
+2. **Struct Bloat**: Every service, repository, and controller carries a redundant `logger *slog.Logger` field that must be passed through every constructor.
+3. **Redundant with `context.Context`**: Go's `log/slog` already provides package-level context-aware functions (`slog.InfoContext`, `slog.ErrorContext`) that extract trace IDs, request IDs, and request metadata directly from `ctx`.
+4. **Maintenance Friction**: Changing logging requirements forces cascading signature refactors across calling stacks.
+
+### 5.2 Idiomatic Pattern: Use Package-Level Global `slog` Directly
+Configure the default logger once at application startup (in `main.go`), and call package-level global `slog` functions directly in your packages:
+
+```go
+// ✅ Good: No logger in struct or method signatures
+type UserService struct {
+    repo UserRepository
+}
+
+func NewUserService(repo UserRepository) *UserService {
+    return &UserService{repo: repo}
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, id string) error {
+    // Call package-level slog functions directly with context
+    slog.InfoContext(ctx, "updating user", "id", id)
+    return nil
+}
+```
+
+### 5.3 Attribute Formatting: Strongly-Typed & Key-Value Pairs
+Both strongly-typed `slog.Attr` and loosely-typed key-value pairs are valid:
+```go
+// Strongly-typed (type-safe, slightly more performant):
+slog.InfoContext(ctx, "task processed",
+    slog.String("task_id", id),
+    slog.Int("retries", retries),
+)
+
+// Loosely-typed key-value pairs (idiomatic, concise):
+slog.InfoContext(ctx, "task processed", "task_id", id, "retries", retries)
+```
+
+### 5.4 Third-Party Library Exception
+If an external third-party library explicitly requires a `*slog.Logger` in its configuration struct or constructor (e.g., an HTTP framework or driver adapter), pass it to satisfy the library's API. Never adopt this pattern in your own packages or application code.

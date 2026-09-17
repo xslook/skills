@@ -11,7 +11,7 @@
    - `DEBUG`: Diagnostic details, enabled only during local development or targeted troubleshooting.
    - `INFO`: Significant lifecycle checkpoints (e.g., service started, port bound, batch job finished).
    - `WARN`: Recoverable degradation, fallback execution, upcoming deprecation notices, or transient external dependency jitter.
-   - `ERROR`: Failures requiring developer intervention, unhandled errors, or operations disrupting business workflows.
+4. **Global slog Methods (No Logger Passing)**: Never pass a `*slog.Logger` pointer as a function/method argument or store it in struct fields within your own packages and code. Use package-level global `slog` methods directly (`slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`). Configure the default logger once at application startup via `slog.SetDefault()`. (Exception: If a third-party library explicitly requires passing or storing a logger pointer in its struct/config, follow the library's guidance. Never adopt this pattern in your own packages).
 
 ### 1.2 Contextual Trace ID Injection Handler
 Using a custom `slog.Handler` wrapper to automatically extract tracing IDs from `context.Context`:
@@ -70,11 +70,19 @@ slog.InfoContext(ctx, "user login", "username", u, "password", pwd, "token", jwt
 
 #### ✅ Best Practices
 ```go
-// Good 1: Strongly-typed structured key-value attributes
+// Good 1: Structured logging attributes
+// Strongly-typed attributes (slog.Attr) provide type safety:
 slog.InfoContext(ctx, "order created successfully",
     slog.Int64("user_id", userID),
     slog.String("order_id", orderID),
     slog.Float64("amount", amount),
+)
+
+// Loosely-typed key-value pairs are also acceptable and idiomatic:
+slog.InfoContext(ctx, "order created successfully",
+    "user_id", userID,
+    "order_id", orderID,
+    "amount", amount,
 )
 
 // Good 2: Handle error only once (logged at the outermost handler/controller boundary)
@@ -160,11 +168,11 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 
 ## 3. Distributed Tracing (OpenTelemetry)
 
-> [!NOTE]
-> **Applicability Boundary**: For **small and medium projects**, distributed tracing (OpenTelemetry / Jaeger) is **not mandatory** unless explicitly requested.
-> Small and medium systems should focus on structured logging (`slog` with context-propagated `trace_id` / `request_id`) and RED metrics, avoiding premature introduction of complex tracing agents and collectors. Large distributed microservices must follow the tracing standard below.
+> [!IMPORTANT]
+> **Explicit Request Only**: Only add OpenTelemetry (OTel) or distributed tracing when the user explicitly requests it.
+> Default observability relies on structured logging (`slog` with context-propagated `trace_id` / `request_id`) and RED metrics, avoiding premature introduction of complex tracing agents and collectors. When distributed tracing is explicitly requested, implement using the pattern below:
 
-### OpenTelemetry Span Creation & Propagation (For Large/Distributed Systems)
+### OpenTelemetry Span Creation & Propagation (When Explicitly Requested)
 ```go
 package service
 

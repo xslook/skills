@@ -25,14 +25,21 @@ Enforces production-grade Go engineering standards to guarantee clean architectu
    - Accept interfaces in parameters; return concrete structs. Avoid defining monolithic interfaces in producer packages.
 5. **Consistency First in Brownfield Projects**:
    - When modifying existing codebases, detect and match existing conventions (logging library, error handling, layering, naming, testing). Never introduce conflicting secondary standards into an established project.
-6. **Modern Vanilla Web & Single Binary Delivery**:
-   - Build Web UIs using native standards (Vanilla JS/CSS/HTML5) and Go `html/template` styled with pure CSS tokens (shadcn-compatible), without Node.js/Webpack build pipelines.
-   - Bundle templates and static assets into the binary using `//go:embed`.
-   - Enforce CSRF protection on mutating requests, secure session cookies (`HttpOnly`, `Secure`, `SameSite=Lax`), and security headers.
+6. **No Logger Passing (Use Global `slog` Directly)**:
+   - Don't pass a logger pointer (e.g., `*slog.Logger`) as a function/method argument or struct field in your own packages.
+   - Use package-level global `slog` methods directly (e.g., `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`). Configure handlers once at startup via `slog.SetDefault()`.
+   - *(Exception: If a third-party library requires passing a logger pointer in its struct/config, follow the library's API).*
 7. **Strict GoDoc Comments**:
    - All exported packages, types, functions, methods, constants, and variables must have complete-sentence GoDoc comments starting with the identifier's name.
    - Critical and core functions must provide usage examples in their doc comments.
    - Code comments must document intent, concurrency invariants, or trade-offs—never redundantly restate syntax.
+
+### Optional Standards (Web Applications)
+
+- **Modern Vanilla Web & Single Binary Delivery**:
+  - Build Web UIs using native standards (Vanilla JS/CSS/HTML5) and Go `html/template` styled with pure CSS tokens (shadcn-compatible), without Node.js/Webpack build pipelines.
+  - Bundle templates and static assets into the binary using `//go:embed`.
+  - Enforce CSRF protection on mutating requests, secure session cookies (`HttpOnly`, `Secure`, `SameSite=Lax`), and security headers.
 
 ---
 
@@ -54,10 +61,10 @@ For multi-service monorepos, configure Go Workspaces via `go.work`.
 | :--- | :--- | :--- |
 | **Scale & Project Layouts** | [scale_and_structures.md](./references/scale_and_structures.md) | Small CLI, Standard Service, Clean Architecture/DDD directory trees, `go.work` |
 | **Greenfield & Brownfield SOP** | [greenfield_and_brownfield.md](./references/greenfield_and_brownfield.md) | Bottom-up scaffolding pipeline, graceful shutdown skeleton, backward compatibility options |
-| **Logging & Observability** | [logging_and_observability.md](./references/logging_and_observability.md) | `log/slog` TraceID handler, RED metrics middleware, OpenTelemetry spans, health probes |
+| **Logging & Observability** | [logging_and_observability.md](./references/logging_and_observability.md) | `log/slog` TraceID handler, RED metrics, health probes, OpenTelemetry (on explicit request only) |
 | **Testing & Quality Gates** | [testing_and_quality.md](./references/testing_and_quality.md) | Table-driven testing skeleton, `require` vs `assert`, interface mocking, fuzz testing |
 | **Error Handling & Concurrency** | [errors_and_concurrency.md](./references/errors_and_concurrency.md) | `%w` wrapping, `errors.Is/As`, `AppError`, `errgroup` parallel orchestration, panic recovery |
-| **Idiomatic Go & Pitfalls** | [idiomatic_go_best_practices.md](./references/idiomatic_go_best_practices.md#1-interface-design-standards) | Consumer interfaces, resource leak fixes (SQL rows, HTTP body, loop defer), manual DI |
+| **Idiomatic Go & Pitfalls** | [idiomatic_go_best_practices.md](./references/idiomatic_go_best_practices.md) | Consumer interfaces, no logger passing, resource leak fixes (SQL rows, HTTP body, loop defer), manual DI |
 | **Web UI & Security** | [web_ui_and_templating.md](./references/web_ui_and_templating.md) | `//go:embed` asset manager, `html/template` layouts, pure CSS tokens, CSRF & sessions |
 | **Code Comments & Documentation** | [documentation_and_comments.md](./references/documentation_and_comments.md) | Exported identifier comments, code block intent documentation, `Deprecated:`, `TODO` |
 
@@ -103,6 +110,7 @@ go tool cover -func=coverage.out
 - [ ] All errors are wrapped with `%w` or handled at boundaries (no "log and return").
 - [ ] `ctx context.Context` is the first parameter for all I/O, database, and network operations.
 - [ ] All goroutines are bounded by `ctx.Done()`, `sync.WaitGroup`, or `errgroup.Group`.
+- [ ] No logger pointer passed as function argument or struct field; global slog methods used directly.
 - [ ] All exported types, functions, methods, and constants have GoDoc comments starting with their name.
 - [ ] Non-obvious code blocks (locks, buffered channels, defensive workarounds) document design intent.
-- [ ] (If Web UI) Assets and templates are bundled via `//go:embed`, and mutating endpoints enforce CSRF tokens.
+- [ ] (Optional: If Web UI) Assets and templates are bundled via `//go:embed`, and mutating endpoints enforce CSRF tokens.
