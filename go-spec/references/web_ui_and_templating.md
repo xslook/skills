@@ -69,42 +69,85 @@ package web
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
-	"os"
+	"path"
+	"strings"
+	"time"
 )
 
-//go:embed templates/* static/*
-var embeddedFS embed.FS
+//go:embed templates static
+var embeddedAssets embed.FS
 
 type AssetManager struct {
 	isDev bool
+	pages map[string]*template.Template
 }
 
-func NewAssetManager(isDev bool) *AssetManager {
-	return &AssetManager{isDev: isDev}
-}
-
-// GetStaticFS retrieves the static asset file system (supports local hot-reload in dev and embedded FS in production)
-func (m *AssetManager) GetStaticFS() http.FileSystem {
-	if m.isDev {
-		// Dev mode: Read directly from local disk so CSS/JS changes don't require recompilation
-		return http.Dir("internal/web/static")
+func NewAssetManager(isDev bool) (*AssetManager, error) {
+	m := &AssetManager{isDev: isDev}
+	if !isDev {
+		pages, err := m.compilePages(embeddedAssets)
+		if err != nil {
+			return nil, err
+		}
+		m.pages = pages
 	}
-	// Production mode: Serve from embedded virtual filesystem
-	sub, _ := fs.Sub(embeddedFS, "static")
-	return http.FS(sub)
+	return m, nil
 }
 
-// ParseTemplates compiles and loads HTML templates
-func (m *AssetManager) ParseTemplates(funcMap template.FuncMap) (*template.Template, error) {
-	tmpl := template.New("").Funcs(funcMap)
-
+// GetStaticFS retrieves the static asset file system (hot-reload from disk in dev, embedded FS in prod)
+func (m *AssetManager) GetStaticFS() (http.Handler, error) {
 	if m.isDev {
-		return tmpl.ParseGlob("internal/web/templates/**/*.html")
+		return http.StripPrefix("/static/", http.FileServer(http.Dir("internal/web/static"))), nil
 	}
-	return tmpl.ParseFS(embeddedFS, "templates/**/*.html", "templates/*.html")
+	sub, err := fs.Sub(embeddedAssets, "static")
+	if err != nil {
+		return nil, fmt.Errorf("sub static fs: %w", err)
+	}
+	return http.StripPrefix("/static/", http.FileServerFS(sub)), nil
+}
+
+// compilePages builds an isolated template set for each page by cloning the layout base.
+// Never parse multiple pages into one template set, or {{define "content"}} will collide.
+func (m *AssetManager) compilePages(fsys fs.FS) (map[string]*template.Template, error) {
+	funcs := template.FuncMap{
+		"formatDate": func(t time.Time) string { return t.Format(time.DateTime) },
+	}
+
+	base := template.New("").Funcs(funcs)
+	for _, pattern := range []string{"templates/layouts/*.html", "templates/partials/*.html"} {
+		matches, err := fs.Glob(fsys, pattern)
+		if err != nil {
+			return nil, fmt.Errorf("glob %s: %w", pattern, err)
+		}
+		if len(matches) == 0 {
+			continue
+		}
+		if _, err := base.ParseFS(fsys, matches...); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", pattern, err)
+		}
+	}
+
+	pageFiles, err := fs.Glob(fsys, "templates/pages/*.html")
+	if err != nil {
+		return nil, fmt.Errorf("glob pages: %w", err)
+	}
+
+	pages := make(map[string]*template.Template, len(pageFiles))
+	for _, file := range pageFiles {
+		tmpl, err := base.Clone()
+		if err != nil {
+			return nil, fmt.Errorf("clone base for %s: %w", file, err)
+		}
+		if _, err := tmpl.ParseFS(fsys, file); err != nil {
+			return nil, fmt.Errorf("parse page %s: %w", file, err)
+		}
+		pages[strings.TrimSuffix(path.Base(file), ".html")] = tmpl
+	}
+	return pages, nil
 }
 ```
 
@@ -195,21 +238,25 @@ var TemplateFuncs = template.FuncMap{
 
 ## 5. Modern Vanilla JavaScript Conventions
 
-### 5.1 Unified Fetch Client Wrapper (Automatic CSRF & Error Handling)
-See the `API` class in [base_layout.html](../templates/web/base_layout.html) for the canonical implementation — handles CSRF token injection, 401 redirect, and JSON error extraction.
+### 5.1 Unified Fetch Client Wrapper
+See the `API` class in [base_layout.html](../templates/web/base_layout.html) for the canonical implementation — automatically sends `credentials: 'same-origin'`, handles 401 redirect, 204 No Content, and extracts structured JSON error messages.
 
 ### 5.2 Native `<dialog>` Modal Interaction
+Use native HTML5 `<dialog>` paired with `data-action` attributes to comply with strict CSP policies (no inline `onclick=...`):
+
 ```html
-<button class="btn btn-primary" onclick="document.getElementById('user-dialog').showModal()">
+<!-- Trigger button -->
+<button type="button" class="btn btn-primary" data-action="open-dialog" data-target="user-dialog">
     Create User
 </button>
 
+<!-- Modal Dialog -->
 <dialog id="user-dialog" class="dialog">
     <div class="dialog-content card">
         <div class="card-header">
             <h3 class="card-title">Create New User</h3>
         </div>
-        <form id="create-user-form" onsubmit="handleCreateUser(event)">
+        <form id="create-user-form">
             <div class="card-content space-y-4">
                 <div>
                     <label class="label">Email</label>
@@ -217,28 +264,28 @@ See the `API` class in [base_layout.html](../templates/web/base_layout.html) for
                 </div>
             </div>
             <div class="card-footer flex justify-end gap-2">
-                <button type="button" class="btn btn-outline" onclick="this.closest('dialog').close()">Cancel</button>
+                <button type="button" class="btn btn-outline" data-action="close-dialog">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save</button>
             </div>
         </form>
     </div>
 </dialog>
 
-<script>
-async function handleCreateUser(e) {
+<script nonce="{{ .Nonce }}">
+document.getElementById('create-user-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData.entries());
 
     try {
-        await APIClient.post('/api/v1/users', payload);
+        await API.post('/api/v1/users', payload);
         Toast.success('User created successfully');
         document.getElementById('user-dialog').close();
         window.location.reload();
     } catch (err) {
         Toast.error(err.message);
     }
-}
+});
 </script>
 ```
 
@@ -246,59 +293,32 @@ async function handleCreateUser(e) {
 
 ## 6. Authentication, Sessions & Security Controls
 
-### 6.1 Secure Session Cookies
-- **HttpOnly**: Must be set (`HttpOnly = true`) to prevent session theft via XSS.
-- **Secure**: Must be enabled in production (`Secure = true`) to enforce HTTPS-only transmission.
-- **SameSite**: Set to `SameSite = http.SameSiteLaxMode` (balancing CSRF protection with legitimate cross-site navigation).
+### 6.1 Secure Session Cookies (`__Host-` Prefix)
+In modern web applications, use the `__Host-` cookie prefix. It forces the browser to require `Secure: true`, `Path: "/"`, and reject `Domain` attributes (preventing sibling subdomain cookie poisoning):
 
 ```go
-func SetAuthCookie(w http.ResponseWriter, sessionToken string, isProd bool, maxAge int) {
+const SessionCookieName = "__Host-session"
+
+func SetAuthCookie(w http.ResponseWriter, sessionToken string, maxAge int) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
+		Name:     SessionCookieName,
 		Value:    sessionToken,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   isProd,
+		Secure:   true, // Browsers allow Secure cookies on localhost
 		SameSite: http.SameSiteLaxMode,
 	})
 }
 ```
 
-### 6.2 CSRF Token Verification Middleware (Double Submit Cookie)
-All state-modifying requests (`POST`, `PUT`, `PATCH`, `DELETE`) must be inspected by CSRF middleware:
-
-```go
-func CSRFMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Read-only methods pass through
-		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		cookieToken, err := r.Cookie("csrf_token")
-		if err != nil || cookieToken.Value == "" {
-			http.Error(w, `{"error":"missing csrf cookie"}`, http.StatusForbidden)
-			return
-		}
-
-		// Extract token from header or form parameter
-		headerToken := r.Header.Get("X-CSRF-Token")
-		if headerToken == "" {
-			headerToken = r.FormValue("csrf_token")
-		}
-
-		// Constant-time comparison to prevent timing attacks
-		if subtle.ConstantTimeCompare([]byte(cookieToken.Value), []byte(headerToken)) != 1 {
-			http.Error(w, `{"error":"invalid csrf token"}`, http.StatusForbidden)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-```
+### 6.2 CSRF Protection: Modern Stdlib vs Legacy Tokens
+1. **Modern Standard (Go 1.25+)**: Use **`http.CrossOriginProtection`**. It validates the browser's untamperable `Sec-Fetch-Site` and `Origin` headers on state-changing requests (`POST`, `PUT`, `DELETE`). It requires **zero CSRF tokens**, zero forms boilerplate, and zero token cookies:
+   ```go
+   csrf := http.NewCrossOriginProtection()
+   handler := csrf.Handler(mux)
+   ```
+2. **Legacy / Cross-Subdomain Fallback**: If targeting older Go runtimes or legacy clients that do not send fetch metadata headers, use HMAC-signed double-submit cookies or state-bound server tokens.
 
 ### 6.3 Password Hashing & RBAC Middleware
 ```go
@@ -309,49 +329,58 @@ func HashPassword(password string) (string, error) {
 }
 
 func CheckPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
 // 2. Role-based authorization middleware
+type ctxKey int
+
+const userKey ctxKey = iota
+
+func UserFromContext(ctx context.Context) *User {
+	u, _ := ctx.Value(userKey).(*User)
+	return u
+}
+
 func RequireRoles(roles ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			user, ok := r.Context().Value("user").(*User)
-			if !ok || user == nil {
+			user := UserFromContext(r.Context())
+			if user == nil {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return
 			}
 
-			hasPermission := false
 			for _, role := range roles {
 				if user.Role == role {
-					hasPermission = true
-					break
+					next.ServeHTTP(w, r)
+					return
 				}
 			}
 
-			if !hasPermission {
-				http.Error(w, "Forbidden: Insufficient Permissions", http.StatusForbidden)
-				return
-			}
-
-			next.ServeHTTP(w, r)
+			http.Error(w, "Forbidden: Insufficient Permissions", http.StatusForbidden)
 		})
 	}
 }
 ```
 
-### 6.4 Security Headers Middleware
+### 6.4 Security Headers & CSP Nonce Middleware
+Set hardening headers and generate a cryptographically random nonce per request. Inline scripts must declare `nonce="{{ .Nonce }}"`:
+
 ```go
 func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
-		next.ServeHTTP(w, r)
+		nonce := rand.Text() // crypto/rand, Go 1.24+
+
+		h := w.Header()
+		h.Set("Content-Security-Policy",
+			"default-src 'self'; script-src 'self' 'nonce-"+nonce+"'; "+
+				"style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'")
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		// Note: X-XSS-Protection is omitted per modern OWASP guidelines as it is deprecated and can introduce vulnerabilities.
+
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), nonceKey, nonce)))
 	})
 }
 ```

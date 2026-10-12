@@ -1,68 +1,127 @@
-# Production-grade golangci-lint strict configuration template
+# Production-grade golangci-lint configuration (golangci-lint v2.x schema).
+# Validate after editing: golangci-lint config verify
+# Each linter group below maps to a go-spec golden rule so violations are caught mechanically.
+version: "2"
+
 run:
   timeout: 5m
   tests: true
   allow-parallel-runners: true
 
-output:
-  sort-results: true
-
-linters-settings:
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment # Enable only if strict memory alignment is required
-  gofumpt:
-    extra-rules: true
-  revive:
-    rules:
-      - name: exported
-        arguments:
-          - checkPrivateReceivers
-      - name: package-comments
-      - name: error-naming
-      - name: error-strings
-      - name: error-return
-      - name: var-naming
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - style
-      - performance
-    disabled-checks:
-      - whyNoLint
-  nestif:
-    min-complexity: 5
-  cyclop:
-    max-complexity: 15
-
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Core correctness & bug detection
+    # --- Core correctness & bug detection ---
     - errcheck
     - govet
     - staticcheck
-    - typecheck
     - ineffassign
     - unused
+    - nilerr
 
-    # Modern formatting & code style
-    - gofumpt
+    # --- Rule 1: Explicit error handling & wrapping (%w, errors.Is/As, no text matching) ---
+    - errorlint
+    - errname
+
+    # --- Rule 2: Context propagation (ctx first, never stored in structs) ---
+    - containedctx
+    - noctx
+    - fatcontext
+
+    # --- Resource leaks (HTTP bodies, SQL rows/statements) ---
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+
+    # --- Structured logging (consistent slog key-values, *Context variants when ctx is in scope) ---
+    - sloglint
+
+    # --- Modern Go idioms (any, min/max, slices/maps, range-over-int, etc.) ---
+    - modernize
+    - intrange
+    - copyloopvar
+    - usestdlibvars
+
+    # --- Testing hygiene ---
+    - testifylint
+    - thelper
+    - tparallel
+
+    # --- Style, docs & complexity ---
     - revive
     - gocritic
     - misspell
     - unconvert
-
-    # Complexity & security
+    - nolintlint
     - nestif
+    - cyclop
+
+    # --- Security ---
     - gosec
-    - nilerr
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      # Explicit `_ = f()` is an intentional, reviewable discard (e.g. `_ = resp.Body.Close()` in defer).
+      # Implicitly dropped errors are still always reported.
+      check-blank: false
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # Enable only if strict memory alignment is required
+        - shadow # `err` shadowing in nested scopes is idiomatic Go; too noisy
+    sloglint:
+      kv-only: false
+      attr-only: false
+      no-mixed-args: true # Don't mix key-value pairs and slog.Attr in one call
+      context: scope # Require slog.*Context when a ctx is in scope
+      static-msg: true # Messages must be constant; dynamic data goes in attributes
+      key-naming-case: snake
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+        - name: package-comments
+        - name: error-naming
+        - name: error-strings
+        - name: error-return
+        - name: var-naming
+        - name: context-as-argument
+        - name: context-keys-type
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - whyNoLint
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    nestif:
+      min-complexity: 5
+    cyclop:
+      max-complexity: 15
+
+  exclusions:
+    generated: lax
+    rules:
+      # Tests may use fixed credentials, weak randomness, and dynamic HTTP calls.
+      - path: _test\.go
+        linters:
+          - gosec
+          - noctx
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      extra:
+        group-params: true
 
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0

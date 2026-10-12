@@ -10,12 +10,17 @@ Construct new Go projects in stages following this sequence:
 1. **Initialize Module & Set Version Baseline**:
    ```bash
    go mod init <module-path>
-   # Target Go 1.23+ baseline
+   go mod edit -go=1.26   # Target a currently supported release (Go supports the latest two)
    ```
-2. **Setup Core Toolchain**:
+2. **Pin Developer Tools in `go.mod`** (Go 1.24+ `tool` directive; no `tools.go`, no `@latest` in scripts):
+   ```bash
+   go get -tool golang.org/x/vuln/cmd/govulncheck@latest
+   go tool govulncheck ./...
+   ```
+3. **Setup Core Toolchain**:
    - Add `.golangci.yml` (Static analysis baseline, see [golangci.yml](../templates/golangci.yml)).
-   - Add `Makefile` (Standard targets for `test`, `race`, `lint`, `build`, see [Makefile](../templates/Makefile)).
-   - Configure `.gitignore` (Ignore binaries, `.env`, coverage reports `.coverprofile`).
+   - Add `Makefile` (Standard targets incl. `make check`, see [Makefile](../templates/Makefile)).
+   - Configure `.gitignore` (Ignore `bin/`, `.env`, `coverage.out`).
 
 ### Stage 2: Bottom-Up Scaffolding Pipeline
 Generate code strictly from the bottom up to preserve dependency inversion:
@@ -36,7 +41,7 @@ sequenceDiagram
 ```
 
 ### Stage 3: Server Startup & Graceful Shutdown (Production Template)
-Inside `cmd/<app>/main.go`, always include production-grade graceful shutdown:
+Inside `cmd/<app>/main.go`. `main` only configures logging and converts `run()`'s error into an exit code, so deferred cleanup always runs:
 
 ```go
 package main
@@ -44,6 +49,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -53,57 +59,67 @@ import (
 )
 
 func main() {
-	// 1. Initialize structured logging
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
-	slog.SetDefault(logger)
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
-	// 2. Initialize global lifecycle context listening for interrupt signals
+	if err := run(); err != nil {
+		slog.Error("application exited with error", slog.Any("error", err))
+		os.Exit(1) // The only os.Exit in the program: after run() returns, all defers have executed.
+	}
+}
+
+func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// 3. Assemble application components (Manual Dependency Injection)
+	// Load config, open DB pools, etc. here, each with `defer x.Close()`.
+	health := NewHealth(nil) // See logging_and_observability.md §4.
+
+	mux := http.NewServeMux()
+	health.Register(mux)
+	// Register application routes here (Manual DI: construct repos -> services -> handlers).
+
 	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      buildRouter(),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second, // Slowloris protection (gosec G112)
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
-	// 4. Launch server in background goroutine
+	errCh := make(chan error, 1)
 	go func() {
-		slog.Info("server is starting", "addr", srv.Addr)
+		slog.InfoContext(ctx, "server starting", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("server fatal error", "error", err)
-			os.Exit(1)
+			errCh <- err
 		}
+		close(errCh)
 	}()
 
-	// 5. Block until shutdown signal received
-	<-ctx.Done()
-	slog.Info("shutdown signal received, draining connections...")
-
-	// 6. Graceful shutdown timeout control
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		slog.Error("server forced to shutdown", "error", err)
+	select {
+	case err := <-errCh:
+		return fmt.Errorf("listen: %w", err) // e.g. port already in use
+	case <-ctx.Done():
 	}
-	slog.Info("server exited cleanly")
-}
 
-func buildRouter() http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz/live", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"UP"}`))
-	})
-	return mux
+	// Fail readiness first so the load balancer stops routing new traffic, then drain.
+	slog.InfoContext(ctx, "shutdown signal received, draining")
+	health.StartDraining()
+	time.Sleep(3 * time.Second) // Tune to the load balancer's readiness-probe interval; use 0 outside Kubernetes.
+
+	// WithoutCancel keeps ctx values (trace IDs) but not the already-fired cancellation.
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		return fmt.Errorf("graceful shutdown: %w", err)
+	}
+	slog.InfoContext(ctx, "server exited cleanly")
+	return nil
 }
 ```
+
+> [!TIP]
+> When several long-running components exist (HTTP server, workers, consumers), run each under one `errgroup.WithContext(ctx)`. The first one that fails cancels the rest, and `g.Wait()` returns its error to `main`.
 
 ---
 
@@ -113,6 +129,9 @@ Core directives: **Consistency First, Minimal Blast Radius.**
 
 ### Step 1: Codebase Inspection (Inspect Before Writing Code)
 Before writing any code, scan the codebase and identify conventions:
+0. **Go Version & Tooling Inspection** (do this first):
+   - Read the `go` (and `toolchain`) directive in `go.mod`. **Never use APIs newer than that version** (see the version table in [modern_go.md](./modern_go.md)). Suggest bumping the version as a separate change if it's needed.
+   - Reuse the project's existing `.golangci.yml`, `Makefile`/`Taskfile`, and CI scripts as the source of truth for quality gates; don't overwrite them with the templates.
 1. **Logging System Inspection**:
    - Check if the project uses `log/slog`, `uber-go/zap`, `rs/zerolog`, or standard `log`.
    - *Rule*: **Inherit the existing logging library**. Never introduce `slog` into a project using `zap`, nor introduce `zap` into a project using `slog`.

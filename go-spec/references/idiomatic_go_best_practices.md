@@ -60,29 +60,38 @@ Go convention requires initialisms and acronyms to maintain consistent casing (a
 
 ---
 
-## 3. Common Memory & Resource Leaks
+## 3. Common Resource Leaks & Security Pitfalls
 
-### 3.1 Unclosed or Undrained HTTP Response Bodies
+### 3.1 Unclosed or Undrained HTTP Response Bodies & Zero-Timeout Clients
+1. **Never use zero-timeout HTTP clients**: `http.DefaultClient` and `http.Client{}` have no timeout. A hanging connection can tie up goroutines and sockets indefinitely.
+2. **Always drain and close response bodies**: Even if you don't read the body, drain it to `io.Discard` before closing so TCP connections can be reused.
+
 ```go
-// ✅ Good: Always drain and close response bodies to reuse TCP connections
+// ✅ Good: Configured client timeout, proper body draining and closing
+client := &http.Client{
+    Timeout: 10 * time.Second,
+}
+
 resp, err := client.Do(req)
 if err != nil {
     return err
 }
 defer func() {
-    io.Copy(io.Discard, resp.Body) // Drain body to allow connection reuse in HTTP keep-alive pool
-    resp.Body.Close()
+    _, _ = io.Copy(io.Discard, resp.Body) // Drain body to allow connection reuse
+    _ = resp.Body.Close()
 }()
 ```
 
-### 3.2 Unclosed SQL Rows
+### 3.2 SQL Resource Management & Transactions
+#### Iterating Rows
+Always close rows and check `rows.Err()`:
 ```go
 // ✅ Good: Always defer rows.Close() and inspect rows.Err() after iteration
 rows, err := db.QueryContext(ctx, "SELECT id, name FROM users WHERE age > $1", age)
 if err != nil {
     return err
 }
-defer rows.Close()
+defer func() { _ = rows.Close() }()
 
 for rows.Next() {
     if err := rows.Scan(&id, &name); err != nil {
@@ -94,27 +103,60 @@ if err := rows.Err(); err != nil {
 }
 ```
 
+#### Safe Transactions with `defer tx.Rollback()`
+In Go, `tx.Rollback()` is a safe no-op if `tx.Commit()` has already succeeded. Always defer rollback immediately after starting a transaction:
+```go
+tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+if err != nil {
+    return fmt.Errorf("begin tx: %w", err)
+}
+defer func() { _ = tx.Rollback() }() // Safe no-op if tx.Commit() succeeds
+
+if err := execStatements(ctx, tx); err != nil {
+    return err
+}
+
+if err := tx.Commit(); err != nil {
+    return fmt.Errorf("commit tx: %w", err)
+}
+return nil
+```
+
+#### Production Connection Pool Tuning
+A zero-configured `*sql.DB` defaults to unlimited open connections and 2 idle connections, causing connection thrashing under load:
+```go
+db.SetMaxOpenConns(25)                  // Bounded total concurrent connections
+db.SetMaxIdleConns(25)                  // Match open conns to avoid opening/closing thrash
+db.SetConnMaxLifetime(5 * time.Minute)  // Recycle connections before DB kills them
+db.SetConnMaxIdleTime(1 * time.Minute)  // Clean up idle connections during low-traffic periods
+```
+
 ### 3.3 Hanging `defer` in Tight Loops
 Calling `defer` inside a long or infinite loop delays resource release until the enclosing outer function exits, rapidly exhausting memory or file descriptors:
 
 ```go
-// ❌ Bad: Defer in a loop causes file descriptor / memory exhaustion
+// ❌ Bad: Defer in a loop causes file descriptor exhaustion
 for _, filename := range files {
     f, _ := os.Open(filename)
     defer f.Close() // Only runs when the outer enclosing function returns!
     process(f)
 }
 
-// ✅ Good: Bound defer lifecycle within an anonymous function
+// ✅ Good: Isolate iteration in a dedicated helper that handles errors and deferred cleanup
 for _, filename := range files {
-    func(name string) {
-        f, err := os.Open(name)
-        if err != nil {
-            return
-        }
-        defer f.Close() // Releases immediately upon loop iteration completion
-        process(f)
-    }(filename)
+    if err := processFile(filename); err != nil {
+        slog.Warn("process file failed", slog.String("file", filename), slog.Any("error", err))
+        continue
+    }
+}
+
+func processFile(name string) error {
+    f, err := os.Open(name)
+    if err != nil {
+        return fmt.Errorf("open %s: %w", name, err)
+    }
+    defer func() { _ = f.Close() }()
+    return process(f)
 }
 ```
 
@@ -133,6 +175,44 @@ func GetHeader(hugeData []byte) []byte {
     copy(header, hugeData[:10])
     return header
 }
+```
+
+### 3.5 Accidental Mutex Copying
+Passing a struct that embeds or contains a `sync.Mutex` by value copies its internal locking state, causing deadlocks or unsynchronized data races:
+
+```go
+// ❌ Bad: Value receiver copies the mutex!
+func (s SafeCounter) Value() int { // go vet flags this (copylocks)
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    return s.count
+}
+
+// ✅ Good: Pointer receiver ensures all callers access the same lock instance
+func (s *SafeCounter) Value() int {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    return s.count
+}
+```
+
+### 3.6 Directory Sandboxing & Path Traversal Prevention (`os.Root`)
+In Go 1.24+, never join untrusted user-supplied file paths with `filepath.Join` to access files in a directory, as `../` attacks can traverse out. Use **`os.Root`** to guarantee confinement:
+
+```go
+// ✅ Go 1.24+: os.Root confines all operations inside the directory
+root, err := os.OpenRoot("/var/app/data")
+if err != nil {
+    return err
+}
+defer func() { _ = root.Close() }()
+
+// Opens user-requested path strictly within /var/app/data; rejects any path traversal escaping root
+f, err := root.Open(userInputFilename)
+if err != nil {
+    return fmt.Errorf("open confined file: %w", err)
+}
+defer func() { _ = f.Close() }()
 ```
 
 ---

@@ -12,17 +12,16 @@ package service_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestUserService_Register(t *testing.T) {
 	t.Parallel() // Enable parallel test execution
 
-	// Define input arguments and expectations
 	type args struct {
 		email    string
 		password string
@@ -34,7 +33,6 @@ func TestUserService_Register(t *testing.T) {
 		setupMocks func(m *MockUserRepo)
 		wantUserID string
 		wantErr    error
-		checkErr   func(t *testing.T, err error) // For dynamic error verification
 	}{
 		{
 			name: "successful registration",
@@ -43,11 +41,12 @@ func TestUserService_Register(t *testing.T) {
 				password: "SecurePassword123!",
 			},
 			setupMocks: func(m *MockUserRepo) {
+				// Use mock.Anything for context parameter to avoid brittle exact-context matches
 				m.EXPECT().
-					FindByEmail(context.Background(), "user@example.com").
+					FindByEmail(mock.Anything, "user@example.com").
 					Return(nil, ErrUserNotFound)
 				m.EXPECT().
-					Create(context.Background(), mock.Anything).
+					Create(mock.Anything, mock.Anything).
 					Return("usr-1001", nil)
 			},
 			wantUserID: "usr-1001",
@@ -61,7 +60,7 @@ func TestUserService_Register(t *testing.T) {
 			},
 			setupMocks: func(m *MockUserRepo) {
 				m.EXPECT().
-					FindByEmail(context.Background(), "existing@example.com").
+					FindByEmail(mock.Anything, "existing@example.com").
 					Return(&User{ID: "usr-0001"}, nil)
 			},
 			wantUserID: "",
@@ -80,13 +79,13 @@ func TestUserService_Register(t *testing.T) {
 			}
 			svc := NewUserService(mockRepo)
 
-			// 2. Execute target method
-			gotID, err := svc.Register(context.Background(), tt.args.email, tt.args.password)
+			// 2. Execute target method using t.Context() (Go 1.24+)
+			gotID, err := svc.Register(t.Context(), tt.args.email, tt.args.password)
 
-			// 3. Verify error
+			// 3. Verify error using require.ErrorIs (never string matching)
 			if tt.wantErr != nil {
-				require.Error(t, err)
-				assert.ErrorIs(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
+				assert.Empty(t, gotID)
 				return
 			}
 			require.NoError(t, err)
@@ -129,7 +128,44 @@ When using `stretchr/testify`, strictly distinguish their intended use cases:
 
 ---
 
-## 4. Fuzzing (`testing.F`)
+## 4. Concurrency & Time Testing (`synctest`)
+
+Never use arbitrary `time.Sleep` in tests to wait for goroutines or timeouts — it leads to flaky and slow test suites.
+- In Go 1.25+, use **`testing/synctest`** (the synthetic time and goroutine bubble) to test concurrent and time-dependent logic deterministically:
+
+```go
+func TestRateLimiter(t *testing.T) {
+	synctest.Run(func() {
+		limiter := NewRateLimiter(100 * time.Millisecond)
+		require.True(t, limiter.Allow())
+		require.False(t, limiter.Allow())
+
+		// Fast-forward fake synthetic time without blocking real execution
+		time.Sleep(100 * time.Millisecond)
+		assert.True(t, limiter.Allow())
+	})
+}
+```
+
+---
+
+## 5. Modern Benchmarks (`b.Loop()`)
+
+In Go 1.24+, use `for b.Loop()` instead of `for i := 0; i < b.N; i++`. It automatically handles timer resetting and loop setup:
+
+```go
+func BenchmarkHashToken(b *testing.B) {
+	token := []byte("example-token-payload")
+	b.ResetTimer()
+	for b.Loop() {
+		_ = HashToken(token)
+	}
+}
+```
+
+---
+
+## 6. Fuzzing (`testing.F`)
 
 Any function performing data serialization/deserialization, parsing, hashing/crypto, or custom protocol decoding must include fuzz testing:
 
@@ -156,22 +192,31 @@ func FuzzParseJSONConfig(f *testing.F) {
 
 ---
 
-## 5. Quality Gates & Verification Commands
+## 7. Quality Gates & Verification Pipeline
 
-Before creating a commit or submitting a PR, verify against all 4 quality gates:
+Always execute the verification pipeline in order before committing or creating a pull request (`go fix` runs before formatting so modernizers are applied prior to formatting):
 
 ```bash
-# 1. Concurrency data race detection (Mandatory core check)
-go test -race -timeout 60s ./...
-
-# 2. Run unit tests and calculate atomic test coverage
-go test -coverprofile=coverage.out -covermode=atomic ./...
-go tool cover -func=coverage.out | grep total
-
-# 3. Run static analysis linters
-golangci-lint run --timeout=5m
-
-# 4. Verify module hygiene and integrity
+# 1. Tidy dependencies and verify module hashes
 go mod tidy
 go mod verify
+
+# 2. Modernize code idioms and APIs (Go 1.26+ modernizers)
+go fix ./...
+
+# 3. Format code with standard formatters
+golangci-lint fmt # or: go fmt ./...
+
+# 4. Static analysis checks (misused printf, copied locks, etc.)
+go vet ./...
+
+# 5. Run linters in parallel
+golangci-lint run --timeout=5m
+
+# 6. Concurrency data race detection with shuffled execution order and atomic coverage
+go test -race -shuffle=on -coverprofile=coverage.out -covermode=atomic ./...
+go tool cover -func=coverage.out | grep total
+
+# 7. Scan for reachable known vulnerabilities
+govulncheck ./...
 ```

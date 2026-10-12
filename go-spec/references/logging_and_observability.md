@@ -11,42 +11,97 @@
    - `DEBUG`: Diagnostic details, enabled only during local development or targeted troubleshooting.
    - `INFO`: Significant lifecycle checkpoints (e.g., service started, port bound, batch job finished).
    - `WARN`: Recoverable degradation, fallback execution, upcoming deprecation notices, or transient external dependency jitter.
-4. **Global slog Methods (No Logger Passing)**: Never pass a `*slog.Logger` pointer as a function/method argument or store it in struct fields within your own packages and code. Use package-level global `slog` methods directly (`slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`). Configure the default logger once at application startup via `slog.SetDefault()`. (Exception: If a third-party library explicitly requires passing or storing a logger pointer in its struct/config, follow the library's guidance. Never adopt this pattern in your own packages).
+   - `ERROR`: A request or job failed and needs attention. Log once, at the boundary that handles the error (see golden rule 1).
+4. **Global slog Methods (No Logger Passing)**: See golden rule 6 in [SKILL.md](../SKILL.md). Configure once via `slog.SetDefault()` in `main`; use `slog.*Context(ctx, ...)` everywhere else.
+5. **Constant Messages, Snake-Case Keys**: Messages are static strings (`"order created"`); variable data goes in attributes with `snake_case` keys. Don't mix `slog.Attr` and loose key-value pairs in one call. (Enforced by `sloglint` in [golangci.yml](../templates/golangci.yml).)
+6. **Errors as `slog.Any("error", err)`**: Use one consistent key (`error`) so log queries work across services.
 
 ### 1.2 Contextual Trace ID Injection Handler
-Using a custom `slog.Handler` wrapper to automatically extract tracing IDs from `context.Context`:
+A `slog.Handler` wrapper that adds request-scoped IDs from `context.Context` to every record:
 
 ```go
-package logger
+// Package logctx enriches slog records with request-scoped identifiers.
+package logctx
 
 import (
 	"context"
 	"log/slog"
 )
 
-type contextKey string
+// Unexported key type: no other package can collide with or overwrite these keys.
+type ctxKey int
 
 const (
-	TraceIDKey   contextKey = "trace_id"
-	RequestIDKey contextKey = "request_id"
+	traceIDKey ctxKey = iota
+	requestIDKey
 )
 
-type ContextHandler struct {
-	slog.Handler
+// WithTraceID returns a copy of ctx carrying the trace ID.
+func WithTraceID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, traceIDKey, id)
 }
 
-func (h *ContextHandler) Handle(ctx context.Context, r slog.Record) error {
-	if ctx != nil {
-		if traceID, ok := ctx.Value(TraceIDKey).(string); ok && traceID != "" {
-			r.AddAttrs(slog.String("trace_id", traceID))
-		}
-		if reqID, ok := ctx.Value(RequestIDKey).(string); ok && reqID != "" {
-			r.AddAttrs(slog.String("request_id", reqID))
-		}
+// WithRequestID returns a copy of ctx carrying the request ID.
+func WithRequestID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, requestIDKey, id)
+}
+
+// Handler adds trace_id and request_id from the context to each record.
+type Handler struct {
+	inner slog.Handler
+}
+
+// NewHandler wraps inner.
+func NewHandler(inner slog.Handler) *Handler { return &Handler{inner: inner} }
+
+func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool { return h.inner.Enabled(ctx, l) }
+
+func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
+	if id, ok := ctx.Value(traceIDKey).(string); ok && id != "" {
+		r.AddAttrs(slog.String("trace_id", id))
 	}
-	return h.Handler.Handle(ctx, r)
+	if id, ok := ctx.Value(requestIDKey).(string); ok && id != "" {
+		r.AddAttrs(slog.String("request_id", id))
+	}
+	return h.inner.Handle(ctx, r)
+}
+
+// WithAttrs and WithGroup MUST re-wrap. If you only embed slog.Handler, these
+// calls return the bare inner handler, and every logger derived via
+// slog.With(...) silently stops emitting trace_id and request_id.
+func (h *Handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &Handler{inner: h.inner.WithAttrs(attrs)}
+}
+
+func (h *Handler) WithGroup(name string) slog.Handler {
+	return &Handler{inner: h.inner.WithGroup(name)}
 }
 ```
+
+Setup in `main`, plus request-ID middleware:
+
+```go
+slog.SetDefault(slog.New(logctx.NewHandler(
+	slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+)))
+
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-ID")
+		if id == "" || len(id) > 64 { // Client-supplied: bound it so it can't bloat or forge log lines.
+			id = rand.Text() // crypto/rand, Go 1.24+
+		}
+		w.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(w, r.WithContext(logctx.WithRequestID(r.Context(), id)))
+	})
+}
+```
+
+> [!TIP]
+> Make the log level adjustable at runtime with a `slog.LevelVar` passed as `HandlerOptions.Level`, e.g. toggled by an admin endpoint or a `LOG_LEVEL` env var at startup.
+
+> [!NOTE]
+> **Testing trade-off of the global logger**: parallel tests share `slog.Default()`, so per-test log capture isn't possible. Assert on returned errors and observable behavior, not on log output. If a test truly must inspect logs, run it without `t.Parallel()` and swap `slog.SetDefault` with a handler that writes to a buffer, restoring the original in `t.Cleanup`.
 
 ### 1.3 Logging Examples (Good vs Bad)
 
@@ -148,6 +203,12 @@ func (rec *statusRecorder) WriteHeader(code int) {
 	rec.ResponseWriter.WriteHeader(code)
 }
 
+// Unwrap lets http.ResponseController reach the underlying writer (Flush, deadlines, hijack).
+func (rec *statusRecorder) Unwrap() http.ResponseWriter { return rec.ResponseWriter }
+
+// MetricsMiddleware must wrap the ServeMux directly. The mux sets r.Pattern on
+// the request it receives; a middleware in between that calls r.WithContext
+// passes a copy, and this outer request never sees the pattern.
 func MetricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -155,11 +216,15 @@ func MetricsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(rec, r)
 
-		duration := time.Since(start).Seconds()
-		path := r.URL.Path // In production, use route templates like "/users/{id}" to prevent cardinality explosion
+		// r.Pattern (Go 1.23+) is the matched route template, e.g. "GET /users/{id}".
+		// Never label with r.URL.Path: every distinct ID creates a new time series.
+		route := r.Pattern
+		if route == "" {
+			route = "unmatched"
+		}
 
-		httpRequestsTotal.WithLabelValues(r.Method, path, strconv.Itoa(rec.statusCode)).Inc()
-		httpRequestDuration.WithLabelValues(r.Method, path).Observe(duration)
+		httpRequestsTotal.WithLabelValues(r.Method, route, strconv.Itoa(rec.statusCode)).Inc()
+		httpRequestDuration.WithLabelValues(r.Method, route).Observe(time.Since(start).Seconds())
 	})
 }
 ```
@@ -214,34 +279,54 @@ In cloud-native/Kubernetes environments, separate the following two probes:
    - Behavior: Returns `200 OK` as long as the HTTP server responds. **Never ping databases or external dependencies here** (preventing dependency blips from triggering cascading pod restarts across the cluster).
 2. **Readiness Probe (`GET /healthz/ready`)**:
    - Purpose: Checks whether the service is ready to accept incoming traffic.
-   - Behavior: Pings core downstream dependencies (database ping, Redis ping, message queue connections). Returns `503 Service Unavailable` on failure.
+   - Behavior: Pings core downstream dependencies (database ping, Redis ping, message queue connections). Returns `503 Service Unavailable` on failure, **and as soon as shutdown begins**, so the load balancer stops sending traffic before `Server.Shutdown` drains connections.
 
 ```go
-func RegisterHealthRoutes(mux *http.ServeMux, db *sql.DB, rdb *redis.Client) {
-	// Liveness Probe
+// Pinger is satisfied by *sql.DB (PingContext) or a small adapter around any client.
+type Pinger interface {
+	PingContext(ctx context.Context) error
+}
+
+// Health serves liveness and readiness probes.
+type Health struct {
+	deps     map[string]Pinger
+	draining atomic.Bool
+}
+
+func NewHealth(deps map[string]Pinger) *Health { return &Health{deps: deps} }
+
+// StartDraining makes readiness fail. Call it on SIGTERM, wait a few seconds
+// for the load balancer to notice, then call srv.Shutdown.
+func (h *Health) StartDraining() { h.draining.Store(true) }
+
+func (h *Health) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /healthz/live", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"alive"}`))
+		writeStatus(w, r, http.StatusOK, map[string]string{"status": "alive"})
 	})
 
-	// Readiness Probe
 	mux.HandleFunc("GET /healthz/ready", func(w http.ResponseWriter, r *http.Request) {
+		if h.draining.Load() {
+			writeStatus(w, r, http.StatusServiceUnavailable, map[string]string{"status": "draining"})
+			return
+		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-
-		if err := db.PingContext(ctx); err != nil {
-			http.Error(w, `{"status":"unready","reason":"database unreachable"}`, http.StatusServiceUnavailable)
-			return
+		for name, dep := range h.deps {
+			if err := dep.PingContext(ctx); err != nil {
+				slog.WarnContext(ctx, "readiness dependency check failed", slog.String("dependency", name), slog.Any("error", err))
+				writeStatus(w, r, http.StatusServiceUnavailable, map[string]string{"status": "unready", "dependency": name})
+				return
+			}
 		}
-		if err := rdb.Ping(ctx).Err(); err != nil {
-			http.Error(w, `{"status":"unready","reason":"redis unreachable"}`, http.StatusServiceUnavailable)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ready"}`))
+		writeStatus(w, r, http.StatusOK, map[string]string{"status": "ready"})
 	})
+}
+
+func writeStatus(w http.ResponseWriter, r *http.Request, code int, body map[string]string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		slog.DebugContext(r.Context(), "write health response", slog.Any("error", err))
+	}
 }
 ```
