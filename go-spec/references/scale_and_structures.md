@@ -158,7 +158,7 @@ Inbound Adapters (HTTP/gRPC) ──> Use Cases ──> Domain (Entities)
 ```
 - **Domain layer** must not import any `adapter` or external frameworks (e.g., `gin`, `gorm`, `sqlx`).
 - Inbound requests (HTTP DTOs) are converted to Use Case command structs, processed according to domain rules, returned as Use Case response models, and formatted as HTTP responses by the controller.
-- **Alignment with Golden Rule 4 ("Consumer-Defined Interfaces")**: In DDD / Hexagonal architecture, the Domain/UseCase layer is the *consumer* of persistence and external capabilities. Defining outbound port interfaces (`order.Repository`, `payment.Gateway`) inside `internal/domain` or `internal/usecase` adheres to the consumer-defined principle — the domain dictates what it needs, and external adapters implement those ports.
+- **Alignment with Golden Rule 5 ("Consumer-Defined Interfaces")**: In DDD / Hexagonal architecture, the Domain/UseCase layer is the *consumer* of persistence and external capabilities. Defining outbound port interfaces (`order.Repository`, `payment.Gateway`) inside `internal/domain` or `internal/usecase` adheres to the consumer-defined principle — the domain dictates what it needs, and external adapters implement those ports.
 
 ---
 

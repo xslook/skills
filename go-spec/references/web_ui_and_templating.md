@@ -180,7 +180,8 @@ See [shadcn_tokens.css](../templates/web/shadcn_tokens.css) for the complete HSL
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ .CSRFToken }}">
+    <!-- Zero CSRF token tags needed when using Go 1.25+ http.CrossOriginProtection (browser Sec-Fetch-Site handles it).
+         Include <meta name="csrf-token" content="{{ .CSRFToken }}"> only when using legacy double-submit tokens in brownfield. -->
     <title>{{ block "title" . }}Dashboard{{ end }} - Go Service</title>
     <link rel="stylesheet" href="/static/css/shadcn.css">
     {{ block "head" . }}{{ end }}

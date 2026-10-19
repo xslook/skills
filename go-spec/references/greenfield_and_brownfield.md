@@ -88,13 +88,14 @@ func run() error {
 	}
 
 	errCh := make(chan error, 1)
-	go func() {
+	var serverWg sync.WaitGroup
+	serverWg.Go(func() {
 		slog.InfoContext(ctx, "server starting", slog.String("addr", srv.Addr))
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 		close(errCh)
-	}()
+	})
 
 	select {
 	case err := <-errCh:
@@ -113,6 +114,7 @@ func run() error {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("graceful shutdown: %w", err)
 	}
+	serverWg.Wait() // Guarantees ListenAndServe goroutine has cleanly terminated (rule 4).
 	slog.InfoContext(ctx, "server exited cleanly")
 	return nil
 }

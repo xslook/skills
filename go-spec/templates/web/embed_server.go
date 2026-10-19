@@ -371,13 +371,14 @@ func run() error {
 	}
 
 	errCh := make(chan error, 1) // Buffered so the goroutine never blocks if run already returned.
-	go func() {
+	var serverWg sync.WaitGroup
+	serverWg.Go(func() {
 		slog.InfoContext(ctx, "web server listening", slog.String("addr", httpServer.Addr))
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 		close(errCh)
-	}()
+	})
 
 	select {
 	case err := <-errCh:
@@ -391,6 +392,7 @@ func run() error {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("graceful shutdown: %w", err)
 	}
+	serverWg.Wait() // Guarantees ListenAndServe goroutine has cleanly terminated (rule 4).
 	slog.InfoContext(ctx, "web server exited cleanly")
 	return nil
 }

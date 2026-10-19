@@ -11,8 +11,8 @@
    - `DEBUG`: Diagnostic details, enabled only during local development or targeted troubleshooting.
    - `INFO`: Significant lifecycle checkpoints (e.g., service started, port bound, batch job finished).
    - `WARN`: Recoverable degradation, fallback execution, upcoming deprecation notices, or transient external dependency jitter.
-   - `ERROR`: A request or job failed and needs attention. Log once, at the boundary that handles the error (see golden rule 1).
-4. **Global slog Methods (No Logger Passing)**: See golden rule 6 in [SKILL.md](../SKILL.md). Configure once via `slog.SetDefault()` in `main`; use `slog.*Context(ctx, ...)` everywhere else.
+   - `ERROR`: A request or job failed and needs attention. Log once, at the boundary that handles the error (see golden rule 2).
+4. **Global slog Methods (No Logger Passing)**: See golden rule 7 in [SKILL.md](../SKILL.md). Configure once via `slog.SetDefault()` in `main`; use `slog.*Context(ctx, ...)` everywhere else.
 5. **Constant Messages, Snake-Case Keys**: Messages are static strings (`"order created"`); variable data goes in attributes with `snake_case` keys. Don't mix `slog.Attr` and loose key-value pairs in one call. (Enforced by `sloglint` in [golangci.yml](../templates/golangci.yml).)
 6. **Errors as `slog.Any("error", err)`**: Use one consistent key (`error`) so log queries work across services.
 

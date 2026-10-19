@@ -1,6 +1,6 @@
 ---
 name: go-spec
-description: Use when designing, scaffolding, developing, refactoring, testing, or reviewing Go (Golang) applications, services, CLI tools, libraries, or modules (.go, go.mod, goroutines, slog, net/http).
+description: Use when designing, scaffolding, developing, refactoring, debugging, testing, or reviewing Go (Golang) code — applications, HTTP/gRPC services, CLI tools, workers, libraries, or modules (.go files, go.mod, go.work).
 ---
 
 # Go Engineering Specification
@@ -9,31 +9,47 @@ Enforces production-grade Go engineering standards to guarantee clean architectu
 
 ---
 
+## 0. Workflow (Follow in Order)
+
+1. **Detect the baseline**: Read `go.mod` (`go` + `toolchain` directives). This caps which APIs you may use (rule 1).
+2. **Classify the task**:
+   - **Brownfield** (existing code): run the inspection steps in [greenfield_and_brownfield.md §2](./references/greenfield_and_brownfield.md#2-brownfield-modification-sop) and match existing conventions.
+   - **Greenfield** (new project): pick a layout from the [Scale Matrix](#2-scale--architecture-decision-matrix), then follow [greenfield_and_brownfield.md §1](./references/greenfield_and_brownfield.md#1-greenfield-scaffolding-sop).
+3. **Load only the references you need** from the [References Index](#3-references-index) (e.g. errors + concurrency for a worker pool; web UI only when building pages).
+4. **Write code** that satisfies the Golden Rules below.
+5. **Verify** with the [Quality Gates](#5-automated-quality-gates-ci--pre-commit) the project has tooling for, then walk the [Pre-Delivery Checklist](#6-pre-delivery-code-quality-checklist).
+6. **Report** any gate you could not run (missing tool, no network) instead of silently skipping it.
+
+> [!IMPORTANT]
+> **Precedence**: Rule 6 (brownfield consistency) overrides rules 5, 7, 8 and the optional web standards. If an established project passes `*zap.Logger` around or uses `pkg/errors`, follow it. Rules 1–4 are safety rules and still apply to all *new* code you write.
+
+---
+
 ## 1. Non-Negotiable Golden Rules
 
-0. **Inspect Go Baseline First**:
+1. **Inspect Go Baseline First**:
    - Check the `go` directive in `go.mod` before writing code. Never generate APIs newer than the project's Go version. Consult [modern_go.md](./references/modern_go.md) for modern equivalents.
-1. **Explicit Error Handling & Wrapping**:
+2. **Explicit Error Handling & Wrapping**:
    - Never ignore `error` values.
    - Wrap errors with `fmt.Errorf("...: %w", err)`. Inspect error identity with `errors.Is` and extract types with `errors.As` (or `errors.AsType` in Go 1.26+). Never match on error text strings.
    - **Handle errors only once**: Either handle and log locally at system boundaries, or wrap and return up the stack. Never log and return simultaneously.
-2. **Context Propagation**:
+3. **Context Propagation**:
    - Any function involving I/O, database queries, RPC, network calls, or cancellations must accept `ctx context.Context` as its first parameter.
    - Never store a `context.Context` inside a struct field.
-3. **No Leaking Goroutines (Lifecycle Closure)**:
-   - Never launch unmanaged goroutines. Every background goroutine must have an owner that tracks its completion (`sync.WaitGroup`, `golang.org/x/sync/errgroup`) and a way to stop it (`<-ctx.Done()`).
-4. **Accept Interfaces, Return Structs**:
+4. **No Leaking Goroutines (Lifecycle Closure)**:
+   - Never launch unmanaged goroutines. Every background goroutine must have an owner that tracks its completion (`sync.WaitGroup`, `golang.org/x/sync/errgroup`) and a way to stop it (`<-ctx.Done()`). This includes "fire-and-forget" work and the `ListenAndServe` goroutine in `main`.
+5. **Accept Interfaces, Return Structs**:
    - Define interfaces on the **consumer** side, keeping them minimal (1–2 methods).
    - Accept interfaces in parameters; return concrete structs. Avoid defining monolithic interfaces in producer packages. *(Note: In Clean/Hexagonal/DDD architecture, domain ports are defined by the domain consumer).*
-5. **Consistency First in Brownfield Projects**:
+6. **Consistency First in Brownfield Projects**:
    - When modifying existing codebases, detect and match existing conventions (logging library, error handling, layering, naming, testing). Never introduce conflicting secondary standards into an established project.
-6. **No Logger Passing (Use Global `slog` Directly)**:
+7. **No Logger Passing (Use Global `slog` Directly)**:
    - Don't pass a logger pointer (e.g., `*slog.Logger`) as a function/method argument or struct field in your own packages.
    - Use package-level global `slog` methods directly (e.g., `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`). Configure handlers once at startup via `slog.SetDefault()`.
    - *(Exception: If a third-party library requires passing a logger pointer in its struct/config, follow the library's API).*
-7. **Strict GoDoc Comments**:
+8. **Strict GoDoc Comments**:
    - All exported packages, types, functions, methods, constants, and variables must have complete-sentence GoDoc comments starting with the identifier's name.
-   - Critical and core functions must provide usage examples in their doc comments.
+   - Critical and core exported APIs must have usage examples, preferably as testable `func ExampleXxx()` functions in `_test.go` (compiled, verified by `go test`, and rendered by pkg.go.dev); short inline snippets in the doc comment are acceptable for internal code.
    - Code comments must document intent, concurrency invariants, or trade-offs—never redundantly restate syntax.
 
 ### Optional Standards (Web Applications)
@@ -97,8 +113,8 @@ go mod verify
 # 2. Modernize code idioms and APIs (Go 1.26+ modernizers; run before formatting)
 go fix ./...
 
-# 3. Format code with standard formatters (gofumpt + goimports via golangci-lint)
-golangci-lint fmt # or: go fmt ./...
+# 3. Format code with standard formatters (gofumpt + goimports via golangci-lint, or go fmt)
+golangci-lint run --fix # or: go fmt ./...
 
 # 4. Catch suspicious constructs (printf, copied locks, unreachable code)
 go vet ./...

@@ -24,13 +24,15 @@ Use this guide to modernize Go code and eliminate legacy patterns. Before applyi
 | `context.Background()` in unit tests | `t.Context()` | 1.24+ | Context is automatically canceled when test completes. |
 | `for i := 0; i < b.N; i++` in benchmarks | `for b.Loop()` | 1.24+ | Automatically resets timer and handles loop iteration. |
 | `// +build tools` in `tools.go` | `go get -tool <pkg>` & `go tool <pkg>` | 1.24+ | Modules natively pin tool dependencies in `go.mod`. |
+| Hand-rolled slice chunking arithmetic loops | `for chunk := range slices.Chunk(s, n)` | 1.23+ | Native iterator, eliminates slice index out-of-bounds bugs. |
+| Custom generator channels / slice collectors | `iter.Seq[V]`, `slices.Collect(seq)` | 1.23+ | Standardized iterators; prevents leaky goroutines in generators. |
 | `filepath.Join(dir, untrusted)` | `root.Open(untrusted)` with `os.Root` | 1.24+ | Sandboxes filesystem access; prevents `../` path traversal attacks. |
 | `rand.Seed(time.Now().UnixNano())` | *(Delete the line completely)* | 1.20+ | Global math/rand is auto-seeded. |
 | `rand.Read` + hex for random tokens | `rand.Text()` from `crypto/rand` | 1.24+ | Returns cryptographically secure random base32 string directly. |
 | `json:",omitempty"` on zero structs/time | `json:",omitzero"` | 1.24+ | Omits struct or time.Time values when they match their zero value. |
 | `wg.Add(1); go func(){ defer wg.Done() ... }` | `wg.Go(func() { ... })` | 1.25+ | `sync.WaitGroup` manages counter lifecycle automatically. |
 | Hand-rolled CSRF cookies & hidden forms | `http.NewCrossOriginProtection()` | 1.25+ | Zero-token browser Sec-Fetch-Site / Origin enforcement in stdlib. |
-| `time.Sleep(...)` to test concurrency | `testing/synctest.Run(func() { ... })` | 1.25+ | Synthetic time bubble: fast, zero sleep time, non-flaky. |
+| `time.Sleep(...)` to test concurrency | `testing/synctest.Test(t, func(t *testing.T) { ... })` | 1.25+ | Synthetic time bubble: fast, zero sleep time, non-flaky. |
 | `var target *T; errors.As(err, &target)` | `target, ok := errors.AsType[*T](err)` | 1.26+ | Generic, eliminates untyped pointer-to-pointer target bug. |
 
 ---
@@ -90,19 +92,21 @@ wg.Wait()
 
 ### 2.4 Deterministic Concurrency Testing (`testing/synctest`) (Go 1.25+)
 ```go
-// ✅ Go 1.25+: Fast and deterministic time testing
+// ✅ Go 1.25+: Fast and deterministic synthetic time bubble
 func TestDebouncer(t *testing.T) {
-    synctest.Run(func() {
+    synctest.Test(t, func(t *testing.T) {
         var called atomic.Bool
         debounced := NewDebouncer(500*time.Millisecond, func() {
             called.Store(true)
         })
 
         debounced.Trigger()
+        synctest.Wait() // Wait for internal goroutines to reach durable blocks
         require.False(t, called.Load())
 
-        // Advances fake clock instantly without sleeping real wall-clock time
+        // Advances synthetic time bubble without sleeping real wall-clock time
         time.Sleep(500 * time.Millisecond)
+        synctest.Wait()
         assert.True(t, called.Load())
     })
 }
@@ -119,6 +123,19 @@ if errors.As(err, &notFoundErr) {
 // ✅ Modern Pattern (Go 1.26+): Direct generic extraction
 if notFoundErr, ok := errors.AsType[*NotFoundError](err); ok {
     handleNotFound(notFoundErr)
+}
+```
+
+### 2.6 Iterators & Safe Slice Chunking (Go 1.23+)
+```go
+// ✅ Go 1.23+: Process items in batches without risky manual slice indexing
+func ProcessBatches(ctx context.Context, items []string, batchSize int) error {
+    for batch := range slices.Chunk(items, batchSize) {
+        if err := sendBatch(ctx, batch); err != nil {
+            return fmt.Errorf("send batch: %w", err)
+        }
+    }
+    return nil
 }
 ```
 

@@ -135,13 +135,14 @@ Never use arbitrary `time.Sleep` in tests to wait for goroutines or timeouts —
 
 ```go
 func TestRateLimiter(t *testing.T) {
-	synctest.Run(func() {
+	synctest.Test(t, func(t *testing.T) {
 		limiter := NewRateLimiter(100 * time.Millisecond)
 		require.True(t, limiter.Allow())
 		require.False(t, limiter.Allow())
 
 		// Fast-forward fake synthetic time without blocking real execution
 		time.Sleep(100 * time.Millisecond)
+		synctest.Wait() // Wait for bubbled goroutines to reach durable blocks
 		assert.True(t, limiter.Allow())
 	})
 }
@@ -205,7 +206,7 @@ go mod verify
 go fix ./...
 
 # 3. Format code with standard formatters
-golangci-lint fmt # or: go fmt ./...
+golangci-lint run --fix # or: go fmt ./...
 
 # 4. Static analysis checks (misused printf, copied locks, etc.)
 go vet ./...

@@ -19,11 +19,11 @@ linters:
     - unused
     - nilerr
 
-    # --- Rule 1: Explicit error handling & wrapping (%w, errors.Is/As, no text matching) ---
+    # --- Rule 2: Explicit error handling & wrapping (%w, errors.Is/As, no text matching) ---
     - errorlint
     - errname
 
-    # --- Rule 2: Context propagation (ctx first, never stored in structs) ---
+    # --- Rule 3: Context propagation (ctx first, never stored in structs) ---
     - containedctx
     - noctx
     - fatcontext

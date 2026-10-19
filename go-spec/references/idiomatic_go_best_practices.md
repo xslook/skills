@@ -215,6 +215,26 @@ if err != nil {
 defer func() { _ = f.Close() }()
 ```
 
+### 3.7 Ticker & Timer Leaks (`time.Tick` vs `time.NewTicker`)
+1. **Never use `time.Tick` in non-top-level routines**: `time.Tick` cannot be stopped and prevents the underlying `Ticker` and channel from ever being garbage collected. In functions, services, or HTTP handlers, always use `time.NewTicker` with `defer ticker.Stop()`:
+   ```go
+   // ❌ Bad: Leaks ticker memory and channel permanently
+   for range time.Tick(1 * time.Minute) { ... }
+
+   // ✅ Good: Guaranteed cleanup on exit
+   ticker := time.NewTicker(1 * time.Minute)
+   defer ticker.Stop()
+   for {
+       select {
+       case <-ctx.Done():
+           return
+       case <-ticker.C:
+           flush(ctx)
+       }
+   }
+   ```
+2. **Avoid `time.After` in tight `select` loops**: Calling `time.After(timeout)` in each loop iteration creates a new timer every cycle that cannot be freed until the full timeout expires, causing memory spikes under high frequency. Use a reusable `time.NewTimer` or reset pattern.
+
 ---
 
 ## 4. Dependency Injection: Manual Constructor Wiring

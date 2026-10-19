@@ -29,9 +29,9 @@ tidy:
 fix:
 	$(GO) fix ./...
 
-## fmt: Format code with the formatters configured in .golangci.yml (gofumpt + goimports)
+## fmt: Format code with the formatters configured in .golangci.yml (or go fmt)
 fmt:
-	golangci-lint fmt
+	golangci-lint run --fix || $(GO) fmt ./...
 
 ## vet: Run go vet static analysis
 vet:
