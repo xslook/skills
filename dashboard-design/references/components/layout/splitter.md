@@ -1,0 +1,77 @@
+# Splitter
+
+> Category: **Layout**  
+> Identifier: `splitter`  
+> Definition: Draggable split pane container for resizing adjacent views.
+
+---
+
+## 1. Overview & Intent
+
+### When to Use
+Use in IDEs, master-detail views, or code editors where users need to manually resize adjacent panels.
+
+### When NOT to Use
+Do not use in simple read-only views where panels have fixed ideal widths. Consult the [Component Decision Tree](../../component-decision-tree.md) for alternatives.
+
+---
+
+## 2. Component Anatomy & Semantic Slots
+
+```text
+Splitter Structural Hierarchy:
+├── Root: Container hosting split panes.
+├── Panel: Resizable content area.
+├── Bar: Draggable separator line with hover highlight.
+```
+
+---
+
+## 3. Variants & Types
+
+- **Horizontal**: Left/right split
+- **Vertical**: Top/bottom split
+- **Nested**: Multi-panel split
+
+---
+
+## 4. Sizes & Spatial Metrics
+
+| Breakpoint / Tier | Viewport Range | Gutter / Spacing Token | Standard Column Strategy |
+| :--- | :--- | :--- | :--- |
+| **xs / sm** | `< 576px` / `≥ 576px` | `--spacing-2` (`8px`) / `--spacing-4` (`16px`) | 1 column (`span 24`) / 2 columns (`span 12`) |
+| **md / lg** | `≥ 768px` / `≥ 992px` | `--spacing-4` (`16px`) / `--spacing-6` (`24px`) | 2–3 columns (`span 12` / `8`) / 4 columns (`span 6`) |
+| **xl / xxl** | `≥ 1200px` / `≥ 1600px` | `--spacing-6` (`24px`) / `--spacing-8` (`32px`) | 4–6 columns (`span 6` / `4`) within max-width shell |
+
+---
+
+## 5. Interaction & State Contract
+
+- **Structural Container**: Pure layout primitive; does not capture keyboard focus (except interactive `Splitter` resize handles).
+- **Responsive Reflow**: Smoothly collapses multi-column arrangements to vertical stacks on narrow viewports without horizontal overflow.
+
+---
+
+## 6. Design Tokens Specification
+
+| CSS Custom Property | Light / Dark Value | Semantic Role |
+| :--- | :--- | :--- |
+| `--spacing-1` .. `--spacing-12` | `4px` .. `48px` | Modular gap, padding, and gutter scale |
+| `--sidebar-width` / `--sidebar-width-icon` | `260px` / `48px` | Expanded and collapsed sidebar rail widths |
+| `--header-height` | `52px` | Sticky workspace header height |
+| `--border` / `--sidebar-border` | `#e4e4e7` (`#27272a` dark) | Structural divider and inset canvas border |
+
+---
+
+## 7. Do's, Don'ts & Accessibility
+
+### Rules & Pitfalls
+- ✅ **Do**: Align all container gaps and paddings strictly to the `4px`/`8px` spatial grid (`8px`, `12px`, `16px`, `24px`, `32px`).
+- ✅ **Do**: Use `.sidebar-wrapper` + `.sidebar-inset` for modern collapsible workspace shells.
+- ❌ **Don't**: Hardcode fixed pixel widths on fluid grid columns or let single-column forms stretch across `1920px` viewports.
+
+### Accessibility (WCAG 2.1)
+- **ARIA Role**: `role="separator"`
+- **Key Attributes**: `aria-valuenow`, `aria-valuemin`, `aria-valuemax`
+- **Keyboard Navigation**: Tab to focus split bar; Left/Right or Up/Down arrows resize panels.
+- **Contrast Requirement**: Text must meet at least **4.5:1** contrast against backgrounds (**3:1** for large text).
