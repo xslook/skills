@@ -1,0 +1,44 @@
+/* Badge Component */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1rem;
+  border: 1px solid transparent;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  transition: colors 0.15s ease;
+  white-space: nowrap;
+}
+
+.badge-secondary {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.badge-outline {
+  border-color: var(--border);
+  color: var(--foreground);
+  background-color: transparent;
+}
+
+.badge-destructive {
+  background-color: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.badge-success {
+  background-color: color-mix(in oklch, var(--success) 20%, transparent);
+  color: var(--success);
+  border-color: color-mix(in oklch, var(--success) 40%, transparent);
+}
+
+.badge-warning {
+  background-color: color-mix(in oklch, var(--warning) 20%, transparent);
+  color: var(--warning);
+  border-color: color-mix(in oklch, var(--warning) 40%, transparent);
+}

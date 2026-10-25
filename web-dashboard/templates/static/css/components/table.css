@@ -1,0 +1,86 @@
+/* Data Table Component */
+.table-wrapper {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+.table {
+  width: 100%;
+  caption-side: bottom;
+  font-size: 0.875rem;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  height: 2.5rem;
+  padding: 0 1rem;
+  vertical-align: middle;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  background-color: color-mix(in oklch, var(--muted) 40%, transparent);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr {
+  transition: background-color 0.1s ease;
+}
+
+.table tbody tr:hover {
+  background-color: color-mix(in oklch, var(--muted) 50%, transparent);
+}
+
+.table tbody tr[data-state="selected"],
+.table tbody tr:has(input[type="checkbox"]:checked) {
+  background-color: var(--muted);
+}
+
+/* Sortable Column Header Link */
+.table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: inherit;
+  font-weight: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.table-sort-btn:hover {
+  color: var(--foreground);
+}
+
+/* Bulk Actions Toolbar (Floats or docks when items are selected) */
+.table-bulk-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background-color: var(--secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.table-wrapper:has(tbody input[type="checkbox"]:checked) .table-bulk-bar,
+.table-bulk-bar[data-visible="true"] {
+  display: flex;
+}

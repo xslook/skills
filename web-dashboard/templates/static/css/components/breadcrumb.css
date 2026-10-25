@@ -1,0 +1,40 @@
+/* Breadcrumb Component */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  list-style: none;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.breadcrumb-link {
+  color: var(--muted-foreground);
+  transition: color 0.15s ease;
+}
+
+.breadcrumb-link:hover {
+  color: var(--foreground);
+}
+
+.breadcrumb-page {
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.breadcrumb-separator {
+  color: var(--muted-foreground);
+  opacity: 0.6;
+}

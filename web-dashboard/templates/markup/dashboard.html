@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - shadcn Style</title>
+  <link rel="stylesheet" href="../static/css/app.css">
+  <script type="module" src="../static/js/app.js"></script>
+</head>
+<body>
+
+<div class="sidebar-wrapper" data-variant="inset">
+
+  <!-- ========================================== -->
+  <!-- partial: app-sidebar                       -->
+  <!-- ========================================== -->
+  <app-sidebar class="app-sidebar" data-state="expanded">
+    <div class="sidebar-header">
+      <div class="avatar avatar-sm">
+        <svg class="icon"><use href="../static/icons/sprite.svg#database"/></svg>
+      </div>
+      <div class="flex flex-col user-meta">
+        <span class="text-sm font-semibold truncate">Acme Inc.</span>
+        <span class="text-xs text-muted truncate">Enterprise Cloud</span>
+      </div>
+    </div>
+
+    <div class="sidebar-content">
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Platform</div>
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item">
+            <a href="#overview" class="sidebar-menu-button active" aria-current="page" data-tooltip="Dashboard" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#layout-dashboard"/></svg>
+              <span class="sidebar-label">Dashboard</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="#analytics" class="sidebar-menu-button" data-tooltip="Analytics" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#chart-bar"/></svg>
+              <span class="sidebar-label">Analytics</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="#documents" class="sidebar-menu-button" data-tooltip="Documents" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#folder"/></svg>
+              <span class="sidebar-label">Documents</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="#users" class="sidebar-menu-button" data-tooltip="Users" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#users"/></svg>
+              <span class="sidebar-label">Users</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="#settings" class="sidebar-menu-button" data-tooltip="Settings" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#settings"/></svg>
+              <span class="sidebar-label">Settings</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-group-label">Projects</div>
+        <ul class="sidebar-menu">
+          <li class="sidebar-menu-item">
+            <a href="#core-api" class="sidebar-menu-button" data-tooltip="Core API" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#file-text"/></svg>
+              <span class="sidebar-label">Core API</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="#storage" class="sidebar-menu-button" data-tooltip="Storage" data-tooltip-side="right">
+              <svg class="icon"><use href="../static/icons/sprite.svg#database"/></svg>
+              <span class="sidebar-label">Storage Engine</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="flex items-center justify-between w-full p-2">
+        <div class="flex items-center gap-2 truncate">
+          <div class="avatar avatar-sm">
+            <span class="avatar-fallback">JD</span>
+          </div>
+          <div class="flex flex-col user-meta truncate">
+            <span class="text-xs font-semibold truncate">Jane Doe</span>
+            <span class="text-xs text-muted truncate">jane@example.com</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-xs btn-icon" title="Account settings">
+          <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis-vertical"/></svg>
+        </button>
+      </div>
+    </div>
+  </app-sidebar>
+
+  <div class="sidebar-backdrop" data-state="closed"></div>
+
+  <!-- ========================================== -->
+  <!-- Main Inset Shell                           -->
+  <!-- ========================================== -->
+  <div class="sidebar-inset">
+
+    <!-- Site Header -->
+    <header class="site-header">
+      <div class="site-header-left">
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" data-action="toggle-sidebar" aria-label="Toggle Sidebar">
+          <svg class="icon"><use href="../static/icons/sprite.svg#panel-left"/></svg>
+        </button>
+        <hr class="separator" data-orientation="vertical">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <ol class="breadcrumb-list">
+            <li class="breadcrumb-item"><a href="#" class="breadcrumb-link">Building Your Application</a></li>
+            <li class="breadcrumb-separator">/</li>
+            <li class="breadcrumb-item"><span class="breadcrumb-page">Data Fetching</span></li>
+          </ol>
+        </nav>
+      </div>
+
+      <div class="site-header-right">
+        <div class="input-icon-group max-w-md hidden md:flex" style="width: 16rem;">
+          <svg class="icon"><use href="../static/icons/sprite.svg#search"/></svg>
+          <input type="search" placeholder="Search documentation..." class="input input-sm">
+        </div>
+
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" data-action="toggle-theme" title="Toggle color theme" aria-label="Toggle theme">
+          <svg class="icon"><use href="../static/icons/sprite.svg#sun"/></svg>
+        </button>
+
+        <button type="button" class="btn btn-ghost btn-icon btn-sm" data-action="open-dialog" data-target="notification-sheet" title="Notifications" aria-label="Notifications">
+          <svg class="icon"><use href="../static/icons/sprite.svg#bell"/></svg>
+        </button>
+
+        <button type="button" class="btn btn-primary btn-sm" data-action="open-dialog" data-target="create-dialog">
+          <svg class="icon"><use href="../static/icons/sprite.svg#plus"/></svg>
+          <span>New Entry</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="site-main">
+
+      <!-- ========================================== -->
+      <!-- partial: section-cards (KPI metric cards)  -->
+      <!-- ========================================== -->
+      <section class="grid grid-cols-1 cq-grid-cols-2 cq-grid-cols-4 gap-4" aria-label="Summary KPIs">
+        <div class="card card-metric">
+          <div class="card-metric-title">
+            <span>Total Revenue</span>
+            <svg class="icon text-muted"><use href="../static/icons/sprite.svg#credit-card"/></svg>
+          </div>
+          <div class="card-metric-value">$45,231.89</div>
+          <div class="card-metric-delta positive">
+            <svg class="icon"><use href="../static/icons/sprite.svg#trending-up"/></svg>
+            <span>+20.1% from last month</span>
+          </div>
+        </div>
+
+        <div class="card card-metric">
+          <div class="card-metric-title">
+            <span>Subscriptions</span>
+            <svg class="icon text-muted"><use href="../static/icons/sprite.svg#users"/></svg>
+          </div>
+          <div class="card-metric-value">+2,350</div>
+          <div class="card-metric-delta positive">
+            <svg class="icon"><use href="../static/icons/sprite.svg#trending-up"/></svg>
+            <span>+180.1% from last month</span>
+          </div>
+        </div>
+
+        <div class="card card-metric">
+          <div class="card-metric-title">
+            <span>Sales</span>
+            <svg class="icon text-muted"><use href="../static/icons/sprite.svg#credit-card"/></svg>
+          </div>
+          <div class="card-metric-value">+12,234</div>
+          <div class="card-metric-delta positive">
+            <svg class="icon"><use href="../static/icons/sprite.svg#trending-up"/></svg>
+            <span>+19% from last month</span>
+          </div>
+        </div>
+
+        <div class="card card-metric">
+          <div class="card-metric-title">
+            <span>Active Now</span>
+            <svg class="icon text-muted"><use href="../static/icons/sprite.svg#chart-bar"/></svg>
+          </div>
+          <div class="card-metric-value">+573</div>
+          <div class="card-metric-delta positive">
+            <svg class="icon"><use href="../static/icons/sprite.svg#trending-up"/></svg>
+            <span>+201 since last hour</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- partial: chart-area-interactive            -->
+      <!-- ========================================== -->
+      <section aria-label="Traffic Analytics">
+        <chart-card class="chart-card" data-chartjs-src="../static/vendor/chart.umd.min.js">
+          <div class="chart-header">
+            <div>
+              <h2 class="card-title">Interactive Traffic Overview</h2>
+              <p class="card-description">Showing total visitors for the selected timeframe</p>
+            </div>
+            <div class="chart-range-toggle" role="group" aria-label="Select timeframe">
+              <button type="button" class="chart-range-btn active" data-range="90d" aria-checked="true">Last 3 months</button>
+              <button type="button" class="chart-range-btn" data-range="30d" aria-checked="false">Last 30 days</button>
+              <button type="button" class="chart-range-btn" data-range="7d" aria-checked="false">Last 7 days</button>
+            </div>
+          </div>
+          <div class="chart-canvas-container">
+            <div class="chart-loading">Rendering chart...</div>
+            <canvas id="traffic-chart"></canvas>
+          </div>
+        </chart-card>
+      </section>
+
+      <!-- ========================================== -->
+      <!-- partial: data-table (Transactions Table)   -->
+      <!-- ========================================== -->
+      <section aria-label="Recent Transactions">
+        <data-table id="transactions-table-wrapper" class="card">
+          <!-- Table Toolbar -->
+          <div class="card-header">
+            <div class="card-header-row">
+              <div>
+                <h2 class="card-title">Recent Transactions</h2>
+                <p class="card-description">A summary of your latest incoming customer payments.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="input-icon-group" style="width: 14rem;">
+                  <svg class="icon"><use href="../static/icons/sprite.svg#search"/></svg>
+                  <input type="search" placeholder="Filter invoices..." class="input input-sm">
+                </div>
+                <button type="button" class="btn btn-outline btn-sm">
+                  <svg class="icon"><use href="../static/icons/sprite.svg#filter"/></svg>
+                  <span>Filter</span>
+                </button>
+                <button type="button" class="btn btn-outline btn-sm">
+                  <svg class="icon"><use href="../static/icons/sprite.svg#columns-3"/></svg>
+                  <span>Columns</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bulk Selection Toolbar -->
+          <div class="table-bulk-bar" data-visible="false">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-foreground"><span data-selection-count>0</span> selected</span>
+              <span class="text-muted">of 5 items</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-outline btn-xs">Export Selected</button>
+              <button type="button" class="btn btn-destructive btn-xs">Delete Selected</button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="table-wrapper" style="border: none; border-radius: 0;">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">
+                    <input type="checkbox" class="checkbox" aria-label="Select all rows">
+                  </th>
+                  <th>
+                    <button type="button" class="table-sort-btn">
+                      <span>Invoice</span>
+                      <svg class="icon text-muted"><use href="../static/icons/sprite.svg#arrow-up-down"/></svg>
+                    </button>
+                  </th>
+                  <th>Status</th>
+                  <th>Method</th>
+                  <th>
+                    <button type="button" class="table-sort-btn">
+                      <span>Amount</span>
+                      <svg class="icon text-muted"><use href="../static/icons/sprite.svg#arrow-up-down"/></svg>
+                    </button>
+                  </th>
+                  <th>Date</th>
+                  <th style="width: 50px;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox" class="checkbox" aria-label="Select INV001"></td>
+                  <td class="font-medium">INV-001</td>
+                  <td><span class="badge badge-success">Paid</span></td>
+                  <td>Credit Card</td>
+                  <td class="font-medium">$250.00</td>
+                  <td class="text-muted">Oct 24, 2026</td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Row actions">
+                      <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" class="checkbox" aria-label="Select INV002"></td>
+                  <td class="font-medium">INV-002</td>
+                  <td><span class="badge badge-warning">Pending</span></td>
+                  <td>PayPal</td>
+                  <td class="font-medium">$150.00</td>
+                  <td class="text-muted">Oct 24, 2026</td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Row actions">
+                      <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" class="checkbox" aria-label="Select INV003"></td>
+                  <td class="font-medium">INV-003</td>
+                  <td><span class="badge badge-destructive">Failed</span></td>
+                  <td>Bank Transfer</td>
+                  <td class="font-medium">$350.00</td>
+                  <td class="text-muted">Oct 23, 2026</td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Row actions">
+                      <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" class="checkbox" aria-label="Select INV004"></td>
+                  <td class="font-medium">INV-004</td>
+                  <td><span class="badge badge-success">Paid</span></td>
+                  <td>Credit Card</td>
+                  <td class="font-medium">$450.00</td>
+                  <td class="text-muted">Oct 22, 2026</td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Row actions">
+                      <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" class="checkbox" aria-label="Select INV005"></td>
+                  <td class="font-medium">INV-005</td>
+                  <td><span class="badge badge-secondary">Refunded</span></td>
+                  <td>Apple Pay</td>
+                  <td class="font-medium">$550.00</td>
+                  <td class="text-muted">Oct 21, 2026</td>
+                  <td class="text-right">
+                    <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Row actions">
+                      <svg class="icon"><use href="../static/icons/sprite.svg#ellipsis"/></svg>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="pagination">
+            <span class="text-muted">Showing <strong>1</strong> to <strong>5</strong> of <strong>32</strong> results</span>
+            <ul class="pagination-links">
+              <li><button type="button" class="pagination-link" disabled aria-disabled="true">Previous</button></li>
+              <li><button type="button" class="pagination-link active" aria-current="page">1</button></li>
+              <li><button type="button" class="pagination-link">2</button></li>
+              <li><button type="button" class="pagination-link">3</button></li>
+              <li><button type="button" class="pagination-link">Next</button></li>
+            </ul>
+          </div>
+        </data-table>
+      </section>
+
+    </main>
+
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- Native <dialog> Modal (Create Entry Form)  -->
+<!-- ========================================== -->
+<dialog id="create-dialog" class="dialog">
+  <div class="dialog-content">
+    <div class="dialog-header">
+      <h3 class="card-title">Create New Record</h3>
+      <p class="card-description">Add a new operational entry directly to the database.</p>
+      <button type="button" class="dialog-close btn-ghost" data-action="close-dialog" aria-label="Close">✕</button>
+    </div>
+    <form method="dialog">
+      <div class="dialog-body space-y-4">
+        <div class="form-item">
+          <label class="label" for="record-name">Invoice Reference</label>
+          <input type="text" id="record-name" name="invoice" required class="input" placeholder="INV-2026-009">
+        </div>
+        <div class="form-item">
+          <label class="label" for="record-amount">Amount (USD)</label>
+          <input type="number" id="record-amount" name="amount" step="0.01" required class="input" placeholder="199.99">
+        </div>
+        <div class="form-item">
+          <label class="label" for="record-method">Payment Method</label>
+          <select id="record-method" name="method" class="select">
+            <option value="cc">Credit Card</option>
+            <option value="paypal">PayPal</option>
+            <option value="wire">Bank Wire</option>
+          </select>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline btn-sm" data-action="close-dialog">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm">Confirm</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<!-- ========================================== -->
+<!-- Native <dialog class="sheet"> Notification -->
+<!-- ========================================== -->
+<dialog id="notification-sheet" class="sheet" data-side="right">
+  <div class="sheet-content">
+    <div class="sheet-header">
+      <h3 class="card-title">Notifications</h3>
+      <p class="card-description">Recent operational events and team messages.</p>
+      <button type="button" class="dialog-close btn-ghost" data-action="close-dialog" aria-label="Close">✕</button>
+    </div>
+    <div class="sheet-body space-y-4">
+      <div class="card p-3">
+        <div class="flex items-center justify-between text-xs text-muted mb-1">
+          <span>System Health</span>
+          <span>5m ago</span>
+        </div>
+        <p class="text-sm font-medium">Backup completed successfully across 3 nodes.</p>
+      </div>
+      <div class="card p-3">
+        <div class="flex items-center justify-between text-xs text-muted mb-1">
+          <span>Security Alert</span>
+          <span>1h ago</span>
+        </div>
+        <p class="text-sm font-medium">New admin session started from IP 192.168.1.100.</p>
+      </div>
+    </div>
+    <div class="sheet-footer">
+      <button type="button" class="btn btn-outline btn-sm" data-action="close-dialog">Dismiss All</button>
+    </div>
+  </div>
+</dialog>
+
+</body>
+</html>

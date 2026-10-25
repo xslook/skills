@@ -1,0 +1,21 @@
+/* Separator Component */
+.separator {
+  flex-shrink: 0;
+  background-color: var(--border);
+  border: none;
+}
+
+.separator[data-orientation="horizontal"],
+.separator:not([data-orientation="vertical"]) {
+  height: 1px;
+  width: 100%;
+}
+
+.separator[data-orientation="vertical"] {
+  height: 100%;
+  width: 1px;
+}
+
+.site-header .separator[data-orientation="vertical"] {
+  height: 1.25rem;
+}

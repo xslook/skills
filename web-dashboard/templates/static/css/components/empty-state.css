@@ -1,0 +1,45 @@
+/* Empty State Placeholder Component */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border);
+  background-color: color-mix(in oklch, var(--muted) 20%, transparent);
+  gap: 1rem;
+}
+
+.empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.empty-state-icon svg.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.empty-state-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.empty-state-description {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  max-width: 22rem;
+}
+
+.empty-state-action {
+  margin-top: 0.5rem;
+}

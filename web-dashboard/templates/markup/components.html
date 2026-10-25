@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Kitchen Sink - shadcn Design System</title>
+  <link rel="stylesheet" href="../static/css/app.css">
+  <script type="module" src="../static/js/app.js"></script>
+</head>
+<body class="p-6 space-y-8 max-w-5xl mx-auto">
+
+  <header class="flex items-center justify-between pb-4 border-b border-border">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Component Kitchen Sink</h1>
+      <p class="text-sm text-muted">Complete gallery of native web shadcn component states and tokens.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" class="btn btn-outline btn-sm" data-action="toggle-theme">Toggle Theme</button>
+      <a href="dashboard.html" class="btn btn-primary btn-sm">View Dashboard</a>
+    </div>
+  </header>
+
+  <!-- 1. Buttons & Badges -->
+  <section class="space-y-4">
+    <h2 class="text-lg font-semibold">1. Buttons &amp; Badges</h2>
+    <div class="card p-4 space-y-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="button" class="btn btn-primary">Primary</button>
+        <button type="button" class="btn btn-secondary">Secondary</button>
+        <button type="button" class="btn btn-outline">Outline</button>
+        <button type="button" class="btn btn-ghost">Ghost</button>
+        <button type="button" class="btn btn-destructive">Destructive</button>
+        <button type="button" class="btn btn-primary" disabled>Disabled</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="button" class="btn btn-primary btn-xs">Extra Small</button>
+        <button type="button" class="btn btn-primary btn-sm">Small</button>
+        <button type="button" class="btn btn-primary">Default</button>
+        <button type="button" class="btn btn-primary btn-lg">Large</button>
+        <button type="button" class="btn btn-outline btn-icon" aria-label="Settings icon">
+          <svg class="icon"><use href="../static/icons/sprite.svg#settings"/></svg>
+        </button>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-border">
+        <span class="badge">Primary</span>
+        <span class="badge badge-secondary">Secondary</span>
+        <span class="badge badge-outline">Outline</span>
+        <span class="badge badge-destructive">Destructive</span>
+        <span class="badge badge-success">Success</span>
+        <span class="badge badge-warning">Warning</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Form Controls -->
+  <section class="space-y-4">
+    <h2 class="text-lg font-semibold">2. Form Controls</h2>
+    <div class="card p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="form-item">
+        <label class="label" for="inp-email">Email Address</label>
+        <input type="email" id="inp-email" class="input" placeholder="name@example.com">
+        <span class="form-description">We'll never share your email with anyone else.</span>
+      </div>
+      <div class="form-item">
+        <label class="label" for="inp-search">Search with Icon</label>
+        <div class="input-icon-group">
+          <svg class="icon"><use href="../static/icons/sprite.svg#search"/></svg>
+          <input type="search" id="inp-search" class="input" placeholder="Type to search...">
+        </div>
+      </div>
+      <div class="form-item">
+        <label class="label" for="inp-role">Select Role</label>
+        <select id="inp-role" class="select">
+          <option>Administrator</option>
+          <option>Editor</option>
+          <option>Viewer</option>
+        </select>
+      </div>
+      <div class="form-item">
+        <label class="label" for="inp-notes">Notes</label>
+        <textarea id="inp-notes" class="textarea" rows="2" placeholder="Optional notes..."></textarea>
+      </div>
+      <div class="flex items-center gap-6 pt-2">
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <input type="checkbox" class="checkbox" checked>
+          <span>Subscribe to notifications</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer text-sm">
+          <div class="switch">
+            <input type="checkbox" checked>
+            <span class="switch-thumb"></span>
+          </div>
+          <span>Airplane mode</span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Tabs & Empty State -->
+  <section class="space-y-4">
+    <h2 class="text-lg font-semibold">3. Tabs &amp; Empty State</h2>
+    <div class="card p-4 space-y-4">
+      <div class="tabs">
+        <div class="tabs-list" role="tablist">
+          <button type="button" class="tabs-trigger active" role="tab" aria-selected="true">Account</button>
+          <button type="button" class="tabs-trigger" role="tab" aria-selected="false">Password</button>
+          <button type="button" class="tabs-trigger" role="tab" aria-selected="false">Notifications</button>
+        </div>
+        <div class="tabs-content">
+          <div class="empty-state">
+            <div class="empty-state-icon">
+              <svg class="icon"><use href="../static/icons/sprite.svg#database"/></svg>
+            </div>
+            <div class="empty-state-title">No Databases Connected</div>
+            <div class="empty-state-description">Get started by connecting your first PostgreSQL or SQLite database cluster.</div>
+            <div class="empty-state-action">
+              <button type="button" class="btn btn-primary btn-sm">Connect Database</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Interactive Feedback: Dialog, Sheet, and Toast -->
+  <section class="space-y-4">
+    <h2 class="text-lg font-semibold">4. Modals &amp; Feedback</h2>
+    <div class="card p-4 flex flex-wrap items-center gap-4">
+      <button type="button" class="btn btn-outline" data-action="open-dialog" data-target="demo-dialog">Open Dialog</button>
+      <button type="button" class="btn btn-outline" data-action="open-dialog" data-target="demo-sheet">Open Right Sheet</button>
+      <button type="button" class="btn btn-secondary" id="toast-success-btn">Trigger Success Toast</button>
+      <button type="button" class="btn btn-destructive" id="toast-error-btn">Trigger Error Toast</button>
+    </div>
+  </section>
+
+  <!-- 5. Skeletons & Avatars -->
+  <section class="space-y-4">
+    <h2 class="text-lg font-semibold">5. Skeletons &amp; Avatars</h2>
+    <div class="card p-4 flex items-center gap-4">
+      <div class="avatar avatar-lg">
+        <span class="avatar-fallback">AB</span>
+      </div>
+      <div class="space-y-2 flex-1">
+        <div class="skeleton" style="height: 1.25rem; width: 40%;"></div>
+        <div class="skeleton" style="height: 0.875rem; width: 70%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Dialog -->
+  <dialog id="demo-dialog" class="dialog">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <h3 class="card-title">Native Dialog</h3>
+        <p class="card-description">Demonstration of HTML5 &lt;dialog&gt; with backdrop blur.</p>
+        <button type="button" class="dialog-close btn-ghost" data-action="close-dialog">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p class="text-sm">This dialog is modal, traps focus natively, and closes with ESC key.</p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline btn-sm" data-action="close-dialog">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" data-action="close-dialog">Acknowledge</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Demo Sheet -->
+  <dialog id="demo-sheet" class="sheet" data-side="right">
+    <div class="sheet-content">
+      <div class="sheet-header">
+        <h3 class="card-title">Side Sheet</h3>
+        <p class="card-description">Slide-out drawer from the right.</p>
+        <button type="button" class="dialog-close btn-ghost" data-action="close-dialog">✕</button>
+      </div>
+      <div class="sheet-body">
+        <p class="text-sm">Useful for filtering panes, record inspectors, or mobile menus.</p>
+      </div>
+      <div class="sheet-footer">
+        <button type="button" class="btn btn-outline btn-sm" data-action="close-dialog">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module">
+    import { Toast } from '../static/js/app.js';
+    document.getElementById('toast-success-btn')?.addEventListener('click', () => {
+      Toast.success('Settings Saved', 'Your preferences were updated successfully.');
+    });
+    document.getElementById('toast-error-btn')?.addEventListener('click', () => {
+      Toast.error('Network Error', 'Could not reach the database cluster.');
+    });
+  </script>
+</body>
+</html>
