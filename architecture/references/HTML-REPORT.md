@@ -4,38 +4,15 @@ The architectural review is rendered as a single self-contained HTML file in the
 
 ## Scaffold
 
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Architecture review for {{repo name}}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
-      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
-    </script>
-    <style>
-      /* small custom layer for things Tailwind doesn't cover cleanly:
-         dashed seam lines, hand-drawn-feeling arrow heads, etc. */
-      .seam { stroke-dasharray: 4 4; }
-      .leak { stroke: #dc2626; }
-      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
-    </style>
-  </head>
-  <body class="bg-stone-50 text-slate-900 font-sans">
-    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
-      <header>...</header>
-      <section id="candidates" class="space-y-10">...</section>
-      <section id="top-recommendation">...</section>
-    </main>
-  </body>
-</html>
-```
+Start from [assets/report-template.html](assets/report-template.html). Copy it to the report path, fill the `{{placeholders}}`, and repeat the `<article>` block once per candidate. The template already includes the Tailwind/Mermaid imports, the custom style layer, and the section order: header → summary → candidates → top recommendation. The sections below define what goes in each one.
 
 ## Header
 
-Repo name, date, and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. No introduction paragraph. Straight into the candidates.
+Repo name, date, scope (mode: `scan` or `tech-debt`, plus the time window used for churn), and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. No introduction paragraph.
+
+## Summary
+
+One compact table, sorted by priority score: candidate (anchor link to its card) · category · I / R / E · score · tier. Nothing else. It's the at-a-glance index, and the cards hold the detail.
 
 ## Candidate card
 
@@ -44,7 +21,7 @@ The diagrams carry the weight. Prose is sparse, plain, and uses the glossary ter
 Each candidate is one `<article>`:
 
 - **Title**: short, names the deepening (e.g. "Collapse the Order intake pipeline").
-- **Badge row**: recommendation strength (`Strong` = emerald, `Worth exploring` = amber, `Speculative` = slate), plus a tag for the dependency category (`in-process`, `local-substitutable`, `ports & adapters`, `mock`).
+- **Badge row**: recommendation strength (`Strong` = emerald, `Worth exploring` = amber, `Speculative` = slate), a tag for the debt category (`architecture`, `test`, `dependency`, …), a tag for the dependency category on deepening candidates (`in-process`, `local-substitutable`, `ports & adapters`, `mock`), and the **priority score with tier** (e.g. `38 · Now`, with `I4 R4 E2` in small mono text).
 - **Files**: monospaced list, `font-mono text-sm`.
 - **Before / After diagram**: the centrepiece. Two columns, side by side. See patterns below.
 - **Problem**: one sentence. What hurts.
@@ -98,6 +75,8 @@ Before: a tree of function calls rendered as nested boxes. After: the same tree 
 - Keep diagrams ~320px tall so before/after sits comfortably side by side without scrolling.
 - Use `text-xs uppercase tracking-wider` for module labels inside diagrams, so they read as schematic, not as UI.
 - The only scripts are the Tailwind CDN and the Mermaid ESM import. The report is otherwise static: no app code, no interactivity beyond Mermaid's own rendering.
+- Escape `<`, `>`, and `&` in code identifiers (e.g. generics like `Repo<Order>`) so they don't break the HTML or the Mermaid source. Quote Mermaid labels that contain parentheses or brackets.
+- Before handing the report over, re-read the Mermaid blocks for syntax errors. One broken block blanks that diagram.
 
 ## Top recommendation section
 

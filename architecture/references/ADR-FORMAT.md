@@ -14,11 +14,21 @@ Create the `docs/adr/` directory lazily: only when the first ADR is needed.
 
 That's it. An ADR can be a single paragraph. The value is in recording *that* a decision was made and *why*, not in filling out sections.
 
+**Example (`docs/adr/0003-events-between-ordering-and-billing.md`):**
+
+```md
+# Ordering and Billing communicate via domain events
+
+Billing must not block order placement, and the two contexts deploy independently.
+We publish `OrderPlaced` to the message bus instead of calling Billing over HTTP,
+accepting eventual consistency (invoices may lag orders by seconds).
+```
+
 ## Optional sections
 
 Only include these when they add genuine value. Most ADRs won't need them.
 
-- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`): useful when decisions are revisited
+- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`): useful when decisions are revisited. Use the same vocabulary everywhere. ADRs drafted by this skill start as `proposed` until the user accepts them.
 - **Considered Options**: only when the rejected alternatives are worth remembering. When comparing multiple non-trivial alternatives, use an explicit trade-off matrix:
 
 | Option | Complexity | Operational Cost | Scalability | Team Familiarity | Verdict |
@@ -30,7 +40,11 @@ Only include these when they add genuine value. Most ADRs won't need them.
 
 ## Numbering
 
-Scan `docs/adr/` for the highest existing number and increment by one.
+Scan `docs/adr/` for the highest existing number and increment by one. Zero-pad to four digits. Never renumber or reuse a number, even for rejected or deprecated ADRs.
+
+## Superseding
+
+Don't rewrite the decision in an accepted ADR. Write a new ADR that references the old one ("Supersedes ADR-0003 because …"), then change only the old ADR's status line to `superseded by ADR-NNNN`.
 
 ## When to offer an ADR
 
