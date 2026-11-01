@@ -4,7 +4,9 @@ The typography system establishes a mathematical type scale anchored on a `14px`
 
 ---
 
-## 1. Font Family Cascade
+## 1. Font Family Cascade (System Fonts Only)
+
+> **Non-Negotiable Rule**: **DO NOT use internet fonts** (such as Google Fonts, `fonts.googleapis.com`, Adobe Fonts, or external `@font-face` CDN imports). Always rely exclusively on native OS system font stacks (`--font-sans` and `--font-mono`) for zero network latency, offline support, and crisp native subpixel rendering.
 
 ```css
 /* Standard UI Sans-Serif Font Family */
