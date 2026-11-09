@@ -127,16 +127,16 @@ mu.RUnlock()
 // Invariant assertion: An empty batch must never be dispatched to the bulk database engine,
 // as the underlying SQL driver rejects empty VALUES statements with an unhelpful syntax error.
 if len(users) == 0 {
-    return apperrors.NewInvalidArg("users slice cannot be empty")
+    return apperrors.InvalidArg("users slice cannot be empty", nil)
 }
 
 // Note: A buffered channel (size = 100) is chosen instead of an unbuffered channel
 // to absorb brief webhook bursts without blocking inbound HTTP handlers during downstream GC pauses.
 taskQueue := make(chan Task, 100)
 
-// Defensive delay: Workaround for early Linux/macOS kernel socket reuse quirks;
-// brief 5ms pause ensures underlying TCP handles cleanly detach from TIME_WAIT before rebinding.
-time.Sleep(5 * time.Millisecond)
+// Full jitter: Add randomized delay to exponential backoff to prevent thundering-herd
+// retries against downstream databases when they recover from degradation.
+time.Sleep(backoff + rand.Duration(0, jitter))
 ```
 
 ---

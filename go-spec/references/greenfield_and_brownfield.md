@@ -54,6 +54,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -99,7 +100,9 @@ func run() error {
 
 	select {
 	case err := <-errCh:
-		return fmt.Errorf("listen: %w", err) // e.g. port already in use
+		if err != nil {
+			return fmt.Errorf("listen: %w", err) // e.g. port already in use
+		}
 	case <-ctx.Done():
 	}
 

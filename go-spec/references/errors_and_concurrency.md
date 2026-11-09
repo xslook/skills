@@ -121,6 +121,11 @@ func NotFound(msg string, cause error) *Error {
 	return &Error{Code: CodeNotFound, Message: msg, Err: cause}
 }
 
+// InvalidArg builds a CodeInvalidArg error.
+func InvalidArg(msg string, cause error) *Error {
+	return &Error{Code: CodeInvalidArg, Message: msg, Err: cause}
+}
+
 // CodeOf extracts the category of err, defaulting to CodeInternal.
 func CodeOf(err error) Code {
 	if e, ok := errors.AsType[*Error](err); ok {

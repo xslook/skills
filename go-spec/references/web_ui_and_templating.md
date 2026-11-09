@@ -208,10 +208,13 @@ var TemplateFuncs = template.FuncMap{
 	"formatDate": func(t time.Time) string {
 		return t.Format("2006-01-02 15:04:05")
 	},
-	// Safe serialization to JSON for HTML attributes or scripts
-	"toJSON": func(v any) template.JS {
-		b, _ := json.Marshal(v)
-		return template.JS(b)
+	// Safe serialization to JSON string with explicit error propagation
+	"toJSON": func(v any) (string, error) {
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", fmt.Errorf("marshal json: %w", err)
+		}
+		return string(b), nil
 	},
 	// Role check
 	"hasRole": func(userRole, targetRole string) bool {

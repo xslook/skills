@@ -68,13 +68,14 @@ func GetConfig() *Config {
 When an HTTP handler finishes or clients disconnect, the request context is canceled. For fire-and-forget background operations that need to preserve trace IDs, do not create an empty `context.Background()`:
 
 ```go
-// ✅ Good: Preserves logging and tracing attributes from ctx, but detaches timeout/cancel
-func logAuditAsync(ctx context.Context, action string) {
+// ✅ Good: Preserves logging and tracing attributes from ctx, but detaches timeout/cancel.
+// Goroutine lifecycle is owned by wg so callers can await completion during shutdown (Rule 4).
+func logAuditAsync(ctx context.Context, wg *sync.WaitGroup, action string) {
     detachedCtx := context.WithoutCancel(ctx)
-    go func() {
+    wg.Go(func() {
         // Runs cleanly even if the incoming HTTP request completed
         slog.InfoContext(detachedCtx, "audit record", slog.String("action", action))
-    }()
+    })
 }
 ```
 
