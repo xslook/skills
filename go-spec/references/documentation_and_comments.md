@@ -81,7 +81,7 @@ For core business functions, generic libraries, and non-trivial APIs, doc commen
 //	    return client.SyncData(ctx)
 //	})
 //	if err != nil {
-//	    slog.Error("batch retry failed", "err", err)
+//	    slog.ErrorContext(ctx, "batch retry failed", "error", err)
 //	}
 func BatchRetry(ctx context.Context, policy RetryPolicy, fn func(ctx context.Context) error) error {
     ...

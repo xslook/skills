@@ -71,9 +71,9 @@ linters:
         - fieldalignment # Enable only if strict memory alignment is required
         - shadow # `err` shadowing in nested scopes is idiomatic Go; too noisy
     sloglint:
-      kv-only: false
+      kv-only: true # Prefer concise key-value pairs over slog.Attr constructors
       attr-only: false
-      no-mixed-args: true # Don't mix key-value pairs and slog.Attr in one call
+      no-mixed-args: false
       context: scope # Require slog.*Context when a ctx is in scope
       static-msg: true # Messages must be constant; dynamic data goes in attributes
       key-naming-case: snake

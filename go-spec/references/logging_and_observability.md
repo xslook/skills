@@ -5,7 +5,7 @@
 ## 1. Structured Logging Specification (`log/slog`)
 
 ### 1.1 Core Principles
-1. **Structured Only**: Never concatenate raw strings for logging (e.g., logging after `fmt.Sprintf`). Always use key-value attributes (`slog.Attr` or key-value pairs).
+1. **Structured Only**: Never concatenate raw strings for logging (e.g., logging after `fmt.Sprintf`). Always pass structured key-value pairs (e.g., `slog.InfoContext(ctx, "order created", "order_id", id)`).
 2. **Context-Aware**: Any function with `ctx` must use `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`, allowing middleware or custom handlers to automatically extract tracing metadata (`trace_id`, `span_id`, `request_id`).
 3. **Log Level Semantics**:
    - `DEBUG`: Diagnostic details, enabled only during local development or targeted troubleshooting.
@@ -13,8 +13,9 @@
    - `WARN`: Recoverable degradation, fallback execution, upcoming deprecation notices, or transient external dependency jitter.
    - `ERROR`: A request or job failed and needs attention. Log once, at the boundary that handles the error (see golden rule 2).
 4. **Global slog Methods (No Logger Passing)**: See golden rule 7 in [SKILL.md](../SKILL.md). Configure once via `slog.SetDefault()` in `main`; use `slog.*Context(ctx, ...)` everywhere else.
-5. **Constant Messages, Snake-Case Keys**: Messages are static strings (`"order created"`); variable data goes in attributes with `snake_case` keys. Don't mix `slog.Attr` and loose key-value pairs in one call. (Enforced by `sloglint` in [golangci.yml](../templates/golangci.yml).)
-6. **Errors as `slog.Any("error", err)`**: Use one consistent key (`error`) so log queries work across services.
+5. **Prefer Key-Value Pairs Over `slog.Attr` Constructors**: Prefer concise key-value pairs (`slog.InfoContext(ctx, "log text", "key", "value")`) over `slog.Attr` and typed constructors (`slog.String("key", "value")`, `slog.Int(...)`, `slog.Any(...)`). Never mix `slog.Attr` and key-value pairs in one call.
+6. **Constant Messages, Snake-Case Keys**: Messages are static strings (`"order created"`); variable data goes in key-value pairs with `snake_case` keys. (Enforced by `sloglint` in [golangci.yml](../templates/golangci.yml).)
+7. **Errors as `"error", err`**: Use one consistent key (`"error"`) so log queries work across services.
 
 ### 1.2 Contextual Trace ID Injection Handler
 A `slog.Handler` wrapper that adds request-scoped IDs from `context.Context` to every record:
@@ -58,10 +59,10 @@ func (h *Handler) Enabled(ctx context.Context, l slog.Level) bool { return h.inn
 
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	if id, ok := ctx.Value(traceIDKey).(string); ok && id != "" {
-		r.AddAttrs(slog.String("trace_id", id))
+		r.Add("trace_id", id)
 	}
 	if id, ok := ctx.Value(requestIDKey).(string); ok && id != "" {
-		r.AddAttrs(slog.String("request_id", id))
+		r.Add("request_id", id)
 	}
 	return h.inner.Handle(ctx, r)
 }
@@ -125,15 +126,7 @@ slog.InfoContext(ctx, "user login", "username", u, "password", pwd, "token", jwt
 
 #### ✅ Best Practices
 ```go
-// Good 1: Structured logging attributes
-// Strongly-typed attributes (slog.Attr) provide type safety:
-slog.InfoContext(ctx, "order created successfully",
-    slog.Int64("user_id", userID),
-    slog.String("order_id", orderID),
-    slog.Float64("amount", amount),
-)
-
-// Loosely-typed key-value pairs are also acceptable and idiomatic:
+// Good 1: Concise key-value pairs (preferred over verbose slog.String / slog.Int64 / slog.Attr constructors)
 slog.InfoContext(ctx, "order created successfully",
     "user_id", userID,
     "order_id", orderID,
@@ -144,8 +137,8 @@ slog.InfoContext(ctx, "order created successfully",
 if err := svc.CreateOrder(ctx, req); err != nil {
     // The transport controller acts as the boundary, logging the full context and returning HTTP status
     slog.ErrorContext(ctx, "failed to handle create_order request",
-        slog.Any("error", err),
-        slog.String("order_id", req.OrderID),
+        "error", err,
+        "order_id", req.OrderID,
     )
     http.Error(w, "internal server error", http.StatusInternalServerError)
     return
@@ -313,7 +306,7 @@ func (h *Health) Register(mux *http.ServeMux) {
 		defer cancel()
 		for name, dep := range h.deps {
 			if err := dep.PingContext(ctx); err != nil {
-				slog.WarnContext(ctx, "readiness dependency check failed", slog.String("dependency", name), slog.Any("error", err))
+				slog.WarnContext(ctx, "readiness dependency check failed", "dependency", name, "error", err)
 				writeStatus(w, r, http.StatusServiceUnavailable, map[string]string{"status": "unready", "dependency": name})
 				return
 			}
@@ -326,7 +319,7 @@ func writeStatus(w http.ResponseWriter, r *http.Request, code int, body map[stri
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	if err := json.NewEncoder(w).Encode(body); err != nil {
-		slog.DebugContext(r.Context(), "write health response", slog.Any("error", err))
+		slog.DebugContext(r.Context(), "write health response", "error", err)
 	}
 }
 ```

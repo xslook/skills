@@ -145,7 +145,7 @@ for _, filename := range files {
 // ✅ Good: Isolate iteration in a dedicated helper that handles errors and deferred cleanup
 for _, filename := range files {
     if err := processFile(filename); err != nil {
-        slog.Warn("process file failed", slog.String("file", filename), slog.Any("error", err))
+        slog.Warn("process file failed", "file", filename, "error", err)
         continue
     }
 }
@@ -318,17 +318,17 @@ func (s *UserService) UpdateUser(ctx context.Context, id string) error {
 }
 ```
 
-### 5.3 Attribute Formatting: Strongly-Typed & Key-Value Pairs
-Both strongly-typed `slog.Attr` and loosely-typed key-value pairs are valid:
+### 5.3 Attribute Formatting: Prefer Key-Value Pairs Over `slog.Attr`
+Prefer concise key-value pairs over `slog.Attr` and typed attribute constructors (`slog.String`, `slog.Int`, `slog.Any`, etc.) to keep call sites clean and readable:
 ```go
-// Strongly-typed (type-safe, slightly more performant):
+// ✅ Preferred: Concise, idiomatic key-value pairs
+slog.InfoContext(ctx, "task processed", "task_id", id, "retries", retries)
+
+// ❌ Avoid unnecessary verbosity unless required by a custom Handler or hot-path LogAttrs call:
 slog.InfoContext(ctx, "task processed",
     slog.String("task_id", id),
     slog.Int("retries", retries),
 )
-
-// Loosely-typed key-value pairs (idiomatic, concise):
-slog.InfoContext(ctx, "task processed", "task_id", id, "retries", retries)
 ```
 
 ### 5.4 Third-Party Library Exception

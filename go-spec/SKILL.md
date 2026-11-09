@@ -45,7 +45,8 @@ Enforces production-grade Go engineering standards to guarantee clean architectu
    - When modifying existing codebases, detect and match existing conventions (logging library, error handling, layering, naming, testing). Never introduce conflicting secondary standards into an established project.
 7. **No Logger Passing (Use Global `slog` Directly)**:
    - Don't pass a logger pointer (e.g., `*slog.Logger`) as a function/method argument or struct field in your own packages.
-   - Use package-level global `slog` methods directly (e.g., `slog.InfoContext(ctx, ...)`, `slog.ErrorContext(ctx, ...)`). Configure handlers once at startup via `slog.SetDefault()`.
+   - Use package-level global `slog` methods directly (e.g., `slog.InfoContext(ctx, "msg", "key", val)`, `slog.ErrorContext(ctx, "msg", "error", err)`). Configure handlers once at startup via `slog.SetDefault()`.
+   - Prefer concise key-value pairs (`"key", value`) over `slog.Attr` and typed constructors (`slog.String`, `slog.Int`, `slog.Any`, etc.).
    - *(Exception: If a third-party library requires passing a logger pointer in its struct/config, follow the library's API).*
 8. **Strict GoDoc Comments**:
    - All exported packages, types, functions, methods, constants, and variables must have complete-sentence GoDoc comments starting with the identifier's name.
@@ -140,7 +141,7 @@ Verify code adherence to non-negotiable architectural and design standards befor
 - [ ] **Explicit Errors**: All errors are wrapped with `%w` or handled at boundaries; no "log and return" anti-pattern; no error text string matching.
 - [ ] **Context Propagation**: `ctx context.Context` is the first parameter for all I/O, database, and network operations; never stored in struct fields.
 - [ ] **Goroutine Closure**: All background goroutines are bounded by `ctx.Done()`, `sync.WaitGroup`, or `errgroup.Group`.
-- [ ] **Global Logging**: No logger pointer passed as function argument or struct field; global `slog` methods used directly with context.
+- [ ] **Global Logging**: No logger pointer passed as function argument or struct field; global `slog` methods used directly with context and key-value pairs (`"key", val`) preferred over `slog.Attr` constructors.
 - [ ] **GoDoc Coverage**: All exported packages, types, functions, methods, and constants have complete-sentence GoDoc comments starting with their name.
 - [ ] **Design Intent**: Non-obvious code blocks (locks, buffered channels, defensive workarounds) document intent and invariants.
 - [ ] **Resource Hygiene**: Response bodies drained and closed; SQL rows/transactions closed; HTTP clients configure explicit timeouts.

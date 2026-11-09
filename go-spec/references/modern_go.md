@@ -74,7 +74,7 @@ func logAuditAsync(ctx context.Context, wg *sync.WaitGroup, action string) {
     detachedCtx := context.WithoutCancel(ctx)
     wg.Go(func() {
         // Runs cleanly even if the incoming HTTP request completed
-        slog.InfoContext(detachedCtx, "audit record", slog.String("action", action))
+        slog.InfoContext(detachedCtx, "audit record", "action", action)
     })
 }
 ```

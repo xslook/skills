@@ -188,7 +188,7 @@ func (s *Server) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	user, err := authenticate(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		if !errors.Is(err, ErrInvalidCredentials) {
-			slog.ErrorContext(r.Context(), "authenticate user", slog.Any("error", err))
+			slog.ErrorContext(r.Context(), "authenticate user", "error", err)
 		}
 		http.Redirect(w, r, "/login?error=invalid_credentials", http.StatusSeeOther)
 		return
@@ -246,7 +246,7 @@ func authenticate(_ context.Context, _, _ string) (*User, error) {
 func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page string, data PageData) {
 	tmpl, ok := s.pages[page]
 	if !ok {
-		slog.ErrorContext(r.Context(), "unknown page template", slog.String("page", page))
+		slog.ErrorContext(r.Context(), "unknown page template", "page", page)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -256,7 +256,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "base", data); err != nil {
-		slog.ErrorContext(r.Context(), "render template", slog.String("page", page), slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "render template", "page", page, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -265,21 +265,21 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, page
 	w.WriteHeader(status)
 	if _, err := buf.WriteTo(w); err != nil {
 		// Client went away mid-response; nothing left to send.
-		slog.DebugContext(r.Context(), "write response", slog.Any("error", err))
+		slog.DebugContext(r.Context(), "write response", "error", err)
 	}
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, status int, v any) {
 	body, err := json.Marshal(v)
 	if err != nil {
-		slog.ErrorContext(r.Context(), "encode json response", slog.Any("error", err))
+		slog.ErrorContext(r.Context(), "encode json response", "error", err)
 		http.Error(w, `{"message":"internal error"}`, http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if _, err := w.Write(body); err != nil {
-		slog.DebugContext(r.Context(), "write response", slog.Any("error", err))
+		slog.DebugContext(r.Context(), "write response", "error", err)
 	}
 }
 
@@ -341,7 +341,7 @@ func userFrom(ctx context.Context) *User {
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	if err := run(); err != nil {
-		slog.Error("server exited with error", slog.Any("error", err))
+		slog.Error("server exited with error", "error", err)
 		os.Exit(1)
 	}
 }
@@ -373,7 +373,7 @@ func run() error {
 	errCh := make(chan error, 1) // Buffered so the goroutine never blocks if run already returned.
 	var serverWg sync.WaitGroup
 	serverWg.Go(func() {
-		slog.InfoContext(ctx, "web server listening", slog.String("addr", httpServer.Addr))
+		slog.InfoContext(ctx, "web server listening", "addr", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}

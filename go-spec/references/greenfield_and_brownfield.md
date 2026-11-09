@@ -63,7 +63,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
 	if err := run(); err != nil {
-		slog.Error("application exited with error", slog.Any("error", err))
+		slog.Error("application exited with error", "error", err)
 		os.Exit(1) // The only os.Exit in the program: after run() returns, all defers have executed.
 	}
 }
@@ -91,7 +91,7 @@ func run() error {
 	errCh := make(chan error, 1)
 	var serverWg sync.WaitGroup
 	serverWg.Go(func() {
-		slog.InfoContext(ctx, "server starting", slog.String("addr", srv.Addr))
+		slog.InfoContext(ctx, "server starting", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}

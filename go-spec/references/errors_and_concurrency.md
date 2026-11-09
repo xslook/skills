@@ -283,14 +283,14 @@ func processSafely(ctx context.Context, job Job) {
 	defer func() {
 		if r := recover(); r != nil {
 			slog.ErrorContext(ctx, "job panicked",
-				slog.String("job_id", job.ID),
-				slog.Any("panic", r),
-				slog.String("stack", string(debug.Stack())),
+				"job_id", job.ID,
+				"panic", r,
+				"stack", string(debug.Stack()),
 			)
 		}
 	}()
 	if err := processJob(ctx, job); err != nil {
-		slog.ErrorContext(ctx, "job failed", slog.String("job_id", job.ID), slog.Any("error", err))
+		slog.ErrorContext(ctx, "job failed", "job_id", job.ID, "error", err)
 	}
 }
 ```
